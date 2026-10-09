@@ -1,0 +1,49 @@
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --ink:#14161c; --muted:#7a7f8a;
+  --gold:#f5c542; --gold-ink:#231a04; --green:#22a35a; --red:#e5484d;
+  --dark:#0d0f14; --radius:18px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink)}
+.topbar{position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:var(--dark); color:#fff}
+.brand{display:flex; align-items:center; gap:12px}
+.brand-badge{width:42px; height:42px; border-radius:12px; border:2px solid var(--gold); color:var(--gold); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px}
+.brand h1{margin:0; font-size:17px; letter-spacing:.06em}
+.brand p{margin:2px 0 0; font-size:12px; color:#b9bec9}
+.install-btn{background:var(--gold); color:var(--gold-ink); border:0; border-radius:999px; padding:9px 14px; font-weight:700; font-size:13px; cursor:pointer}
+.day-tabs{display:flex; gap:8px; padding:14px 16px 4px; max-width:680px; margin:0 auto}
+.day-tabs button{flex:1; padding:11px 6px; border-radius:999px; border:1.5px solid #d8dbe2; background:#fff; font-weight:700; font-size:13.5px; color:var(--ink); cursor:pointer}
+.day-tabs button.active{background:var(--dark); color:#fff; border-color:var(--dark)}
+.date-pill{max-width:680px; margin:10px auto 2px; padding:0 16px; text-align:center}
+.date-pill span{display:inline-block; background:var(--dark); color:#fff; font-weight:700; font-size:14px; padding:8px 22px; border-radius:10px}
+.match-list{max-width:680px; margin:0 auto; padding:10px 16px 8px; display:flex; flex-direction:column; gap:14px}
+.card{background:var(--card); border-radius:var(--radius); padding:14px; box-shadow:0 2px 10px rgba(16,20,30,.06)}
+.card-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px}
+.league{display:flex; align-items:center; gap:8px; font-weight:700; font-size:13.5px; min-width:0}
+.league img{width:20px; height:20px; object-fit:contain}
+.league .flag{font-size:17px}
+.kickoff{font-size:12.5px; color:var(--muted); font-weight:600; white-space:nowrap}
+.teams{display:flex; align-items:flex-start; justify-content:space-between; gap:6px}
+.team{flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center; min-width:0}
+.crest{width:52px; height:52px; object-fit:contain}
+.crest-fallback{width:52px; height:52px; border-radius:50%; background:#eceef2; color:#3c4150; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px}
+.team-name{font-size:13.5px; font-weight:600; line-height:1.25}
+.center-col{display:flex; flex-direction:column; align-items:center; gap:5px; padding-top:8px; min-width:86px}
+.score{font-size:21px; font-weight:800; letter-spacing:.08em}
+.score-sep{color:var(--muted)}
+.verdict{width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; color:#fff}
+.verdict.won{background:var(--green)}
+.verdict.lost{background:var(--red)}
+.verdict.unknown{background:#9aa0ad}
+.ht{font-size:11.5px; color:var(--muted)}
+.vs{font-size:13px; color:var(--muted); font-weight:700; padding-top:16px}
+.pick-banner{margin-top:13px; background:var(--gold); color:var(--gold-ink); border-radius:11px; padding:11px 14px; font-weight:800; font-size:14px; text-align:center}
+.pick-banner.pending{opacity:.92}
+.pick-banner.won{background:#d9f2e3}
+.pick-banner.lost{background:#fbe3e4}
+.empty{background:#fff; border-radius:var(--radius); padding:26px 18px; text-align:center; color:var(--muted); font-size:14.5px}
+.demo-note{max-width:680px; margin:0 auto; padding:2px 20px; text-align:center; color:var(--muted); font-size:12px}
+.updated{max-width:680px; margin:2px auto 0; padding:4px 20px; text-align:center; color:var(--muted); font-size:12px}
+.disclaimer{max-width:680px; margin:0 auto; padding:16px 20px 34px; text-align:center; color:var(--muted); font-size:12px; line-height:1.55}
+.ios-hint{position:fixed; left:12px; right:12px; bottom:14px; z-index:20; background:var(--dark); color:#fff; border-radius:14px; padding:13px 40px 13px 15px; font-size:13.5px; box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.ios-hint button{position:absolute; right:8px; top:8px; background:transparent; border:0; color:#fff; font-size:15px; cursor:pointer}
