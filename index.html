@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KEITH Pronos — les plus grands matchs, chaque jour</title>
+<meta name="description" content="Chaque jour, les 15 plus grands matchs analysés : 1 pronostic par match, validé automatiquement après le coup de sifflet final.">
+<meta name="theme-color" content="#0d0f14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KEITH Pronos">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-badge">K</span>
+    <div>
+      <h1>KEITH PRONOS</h1>
+      <p>Les plus grands matchs, analysés chaque jour</p>
+    </div>
+  </div>
+  <button id="installBtn" class="install-btn" hidden>📲 Installer</button>
+</header>
+
+<nav class="day-tabs" id="dayTabs" aria-label="Choisir le jour"></nav>
+<div class="date-pill" id="datePill"></div>
+
+<main id="matchList" class="match-list"></main>
+
+<p class="updated" id="updatedAt"></p>
+
+<footer class="disclaimer">
+  ⚠️ Aucun résultat n'est garanti. Ne mise que ce que tu peux te permettre de perdre.<br>
+  Paris sportifs interdits aux moins de 18 ans. Jouer comporte des risques.
+</footer>
+
+<div id="iosInstallHint" class="ios-hint" hidden>
+  Pour installer sur iPhone : touche <b>Partager</b> puis <b>« Sur l'écran d'accueil »</b>.
+  <button id="iosHintClose" aria-label="Fermer">✕</button>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
