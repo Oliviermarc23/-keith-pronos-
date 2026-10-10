@@ -1,6 +1,6 @@
 // Service Worker — KEITH Pronos
 // Coquille de l'app en cache (fonctionne hors-ligne), données toujours fraîches.
-const CACHE = "keith-pronos-v1";
+const CACHE = "keith-pronos-v2";
 const SHELL = [
   ".",
   "index.html",
