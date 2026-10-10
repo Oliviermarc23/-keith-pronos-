@@ -1,49 +1,236 @@
+/* KEITH Pronos — présentation inspirée des applications de pronostics modernes :
+   héros vert profond, cartes blanches, navigation basse fixe. */
 :root{
-  --bg:#f4f5f7; --card:#ffffff; --ink:#14161c; --muted:#7a7f8a;
-  --gold:#f5c542; --gold-ink:#231a04; --green:#22a35a; --red:#e5484d;
-  --dark:#0d0f14; --radius:18px;
+  --green:#17b978; --green-dark:#07271a; --green-mid:#0b3d27;
+  --bg:#eef3f0; --card:#ffffff; --ink:#101613; --muted:#68756d;
+  --line:#e2e9e4; --won:#12a150; --lost:#e0483e;
+  --radius:18px;
 }
-*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink)}
-.topbar{position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:var(--dark); color:#fff}
-.brand{display:flex; align-items:center; gap:12px}
-.brand-badge{width:42px; height:42px; border-radius:12px; border:2px solid var(--gold); color:var(--gold); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px}
-.brand h1{margin:0; font-size:17px; letter-spacing:.06em}
-.brand p{margin:2px 0 0; font-size:12px; color:#b9bec9}
-.install-btn{background:var(--gold); color:var(--gold-ink); border:0; border-radius:999px; padding:9px 14px; font-weight:700; font-size:13px; cursor:pointer}
-.day-tabs{display:flex; gap:8px; padding:14px 16px 4px; max-width:680px; margin:0 auto}
-.day-tabs button{flex:1; padding:11px 6px; border-radius:999px; border:1.5px solid #d8dbe2; background:#fff; font-weight:700; font-size:13.5px; color:var(--ink); cursor:pointer}
-.day-tabs button.active{background:var(--dark); color:#fff; border-color:var(--dark)}
-.date-pill{max-width:680px; margin:10px auto 2px; padding:0 16px; text-align:center}
-.date-pill span{display:inline-block; background:var(--dark); color:#fff; font-weight:700; font-size:14px; padding:8px 22px; border-radius:10px}
-.match-list{max-width:680px; margin:0 auto; padding:10px 16px 8px; display:flex; flex-direction:column; gap:14px}
-.card{background:var(--card); border-radius:var(--radius); padding:14px; box-shadow:0 2px 10px rgba(16,20,30,.06)}
-.card-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px}
-.league{display:flex; align-items:center; gap:8px; font-weight:700; font-size:13.5px; min-width:0}
-.league img{width:20px; height:20px; object-fit:contain}
-.league .flag{font-size:17px}
-.kickoff{font-size:12.5px; color:var(--muted); font-weight:600; white-space:nowrap}
-.teams{display:flex; align-items:flex-start; justify-content:space-between; gap:6px}
-.team{flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center; min-width:0}
-.crest{width:52px; height:52px; object-fit:contain}
-.crest-fallback{width:52px; height:52px; border-radius:50%; background:#eceef2; color:#3c4150; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px}
-.team-name{font-size:13.5px; font-weight:600; line-height:1.25}
-.center-col{display:flex; flex-direction:column; align-items:center; gap:5px; padding-top:8px; min-width:86px}
-.score{font-size:21px; font-weight:800; letter-spacing:.08em}
-.score-sep{color:var(--muted)}
-.verdict{width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; color:#fff}
-.verdict.won{background:var(--green)}
-.verdict.lost{background:var(--red)}
-.verdict.unknown{background:#9aa0ad}
-.ht{font-size:11.5px; color:var(--muted)}
-.vs{font-size:13px; color:var(--muted); font-weight:700; padding-top:16px}
-.pick-banner{margin-top:13px; background:var(--gold); color:var(--gold-ink); border-radius:11px; padding:11px 14px; font-weight:800; font-size:14px; text-align:center}
-.pick-banner.pending{opacity:.92}
-.pick-banner.won{background:#d9f2e3}
-.pick-banner.lost{background:#fbe3e4}
-.empty{background:#fff; border-radius:var(--radius); padding:26px 18px; text-align:center; color:var(--muted); font-size:14.5px}
-.demo-note{max-width:680px; margin:0 auto; padding:2px 20px; text-align:center; color:var(--muted); font-size:12px}
-.updated{max-width:680px; margin:2px auto 0; padding:4px 20px; text-align:center; color:var(--muted); font-size:12px}
-.disclaimer{max-width:680px; margin:0 auto; padding:16px 20px 34px; text-align:center; color:var(--muted); font-size:12px; line-height:1.55}
-.ios-hint{position:fixed; left:12px; right:12px; bottom:14px; z-index:20; background:var(--dark); color:#fff; border-radius:14px; padding:13px 40px 13px 15px; font-size:13.5px; box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.ios-hint button{position:absolute; right:8px; top:8px; background:transparent; border:0; color:#fff; font-size:15px; cursor:pointer}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg); color:var(--ink);
+  max-width:560px; margin:0 auto; padding:0 14px 110px;
+}
+
+/* ---------- Barre supérieure ---------- */
+.topbar{ display:flex; align-items:center; padding:16px 2px 10px; }
+.brand{ display:flex; align-items:center; gap:11px; }
+.brand-badge{
+  width:42px; height:42px; border-radius:13px; flex:0 0 42px;
+  background:linear-gradient(145deg,var(--green-mid),var(--green-dark));
+  color:#fff; font-weight:900; font-size:22px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 16px rgba(7,39,26,.28);
+}
+.brand h1{ font-size:19px; font-weight:900; letter-spacing:.4px; }
+.brand h1 span{ color:var(--green); }
+.brand p{ font-size:11.5px; color:var(--muted); margin-top:1px; }
+
+/* ---------- Héros (Accueil) ---------- */
+.hero{
+  border-radius:24px; padding:24px 20px 20px; color:#eafaf2; margin-top:6px;
+  background:
+    radial-gradient(340px 200px at 88% -10%, rgba(23,185,120,.5), transparent 65%),
+    linear-gradient(150deg,var(--green-mid),var(--green-dark) 70%);
+  box-shadow:0 16px 34px rgba(7,39,26,.30);
+}
+.hero .kicker{ font-size:11px; font-weight:800; letter-spacing:2.5px; color:#7ee2b8; text-transform:uppercase; }
+.hero h2{ font-size:27px; font-weight:900; line-height:1.15; margin:8px 0 6px; }
+.hero p{ font-size:13.5px; opacity:.85; line-height:1.45; }
+.hero-stats{ display:flex; gap:9px; margin-top:16px; }
+.hero-stat{
+  flex:1; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.14);
+  border-radius:14px; padding:10px 8px; text-align:center;
+}
+.hero-stat b{ display:block; font-size:16.5px; font-weight:900; color:#fff; }
+.hero-stat span{ font-size:10.5px; opacity:.8; line-height:1.25; display:block; margin-top:2px; }
+.hero-cta{
+  margin-top:16px; width:100%; border:none; cursor:pointer;
+  background:var(--green); color:#04160d; font-weight:900; font-size:15.5px;
+  padding:14px; border-radius:999px; box-shadow:0 10px 22px rgba(23,185,120,.4);
+}
+.hero-cta:active{ transform:scale(.99); }
+
+/* ---------- Sections ---------- */
+.section-title{
+  display:flex; align-items:baseline; justify-content:space-between;
+  margin:22px 2px 11px; font-size:16.5px; font-weight:900;
+}
+.section-title .link{ font-size:12.5px; color:var(--green); font-weight:800; cursor:pointer; background:none; border:none; }
+
+/* ---------- Match à ne pas manquer ---------- */
+.focus-card{
+  background:var(--card); border-radius:var(--radius); padding:16px;
+  box-shadow:0 8px 22px rgba(16,24,20,.08); border:1px solid var(--line);
+}
+.focus-tag{
+  display:inline-block; font-size:10.5px; font-weight:900; letter-spacing:1.6px;
+  color:var(--green-dark); background:#d9f5e6; border-radius:999px; padding:5px 10px; text-transform:uppercase;
+}
+.focus-teams{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:14px; }
+.focus-team{ flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center; }
+.focus-team .team-name{ font-size:13.5px; font-weight:800; line-height:1.25; }
+.focus-vs{ text-align:center; }
+.focus-vs .vs-time{ font-size:19px; font-weight:900; }
+.focus-vs .vs-date{ font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* ---------- Logos équipes ---------- */
+.crest{ width:38px; height:38px; object-fit:contain; }
+.crest-fallback{
+  width:38px; height:38px; border-radius:50%; flex:0 0 38px;
+  background:linear-gradient(145deg,#e7efe9,#cfdcd2); color:#33503f;
+  font-size:13px; font-weight:900; display:flex; align-items:center; justify-content:center;
+}
+.focus-team .crest, .focus-team .crest-fallback{ width:52px; height:52px; font-size:17px; }
+
+/* ---------- Cartes match (pronostics) ---------- */
+.card{
+  background:var(--card); border-radius:var(--radius); padding:14px 14px 12px;
+  box-shadow:0 8px 22px rgba(16,24,20,.07); border:1px solid var(--line); margin-bottom:12px;
+}
+.card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.league{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#33413a; }
+.league img{ width:19px; height:19px; object-fit:contain; }
+.league .flag{ font-size:15px; }
+.kickoff{ font-size:11.5px; color:var(--muted); font-weight:600; }
+.teams{ display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
+.team{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; min-width:0; }
+.team-name{ font-size:13px; font-weight:700; line-height:1.3; }
+.center-col{ flex:0 0 86px; display:flex; flex-direction:column; align-items:center; gap:3px; padding-top:4px; }
+.score{ font-size:21px; font-weight:900; letter-spacing:.5px; }
+.score-sep{ color:var(--muted); }
+.vs{ font-size:16px; font-weight:900; color:#33413a; background:#eef3f0; border-radius:10px; padding:6px 10px; }
+.ht{ font-size:11px; color:var(--muted); font-weight:600; }
+.live-dot{ font-size:11px; font-weight:800; color:var(--lost); }
+.verdict{
+  width:24px; height:24px; border-radius:50%; color:#fff; font-size:14px; font-weight:900;
+  display:flex; align-items:center; justify-content:center;
+}
+.verdict.won{ background:var(--won); } .verdict.lost{ background:var(--lost); }
+.verdict.unknown{ background:#9aa79e; }
+.pick-banner{
+  margin-top:11px; border-radius:11px; padding:9px 12px; text-align:center;
+  font-size:13.5px; font-weight:900; letter-spacing:.2px;
+  background:#eef3f0; color:#33413a; border:1px dashed #c9d6cc;
+}
+.pick-banner.won{ background:#e2f7ea; color:var(--won); border:1px solid #bfe8cf; }
+.pick-banner.lost{ background:#fdecea; color:var(--lost); border:1px solid #f6cfcb; }
+
+/* ---------- Liste de matchs (vue Matchs) ---------- */
+.match-group-head{
+  display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:900;
+  margin:16px 2px 8px;
+}
+.match-group-head img{ width:20px; height:20px; object-fit:contain; }
+.match-group-head .count{ margin-left:auto; font-size:11.5px; color:var(--muted); font-weight:700; }
+.match-rows{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  box-shadow:0 8px 22px rgba(16,24,20,.06); }
+.mrow{ display:flex; align-items:center; gap:9px; padding:10px 12px; }
+.mrow + .mrow{ border-top:1px solid var(--line); }
+.mrow .mtime{ flex:0 0 46px; font-size:12px; font-weight:800; color:#33413a; text-align:center; }
+.mrow .mtime small{ display:block; font-size:10px; color:var(--muted); font-weight:700; }
+.mrow .mteams{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+.mteam{ display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; }
+.mteam .crest, .mteam .crest-fallback{ width:21px; height:21px; font-size:9px; }
+.mteam span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mscore{ flex:0 0 30px; text-align:right; font-size:13.5px; font-weight:900; display:flex; flex-direction:column; gap:5px; }
+.mscore small{ font-size:10px; color:var(--muted); font-weight:700; }
+.mrow .mini-verdict{ flex:0 0 20px; text-align:center; font-weight:900; font-size:14px; }
+.mini-verdict.won{ color:var(--won); } .mini-verdict.lost{ color:var(--lost); } .mini-verdict.unknown{ color:#9aa79e; }
+
+/* ---------- Chips (jours, filtres) ---------- */
+.chips{ display:flex; gap:8px; overflow-x:auto; padding:4px 2px 10px; scrollbar-width:none; }
+.chips::-webkit-scrollbar{ display:none; }
+.chip{
+  flex:0 0 auto; border:1px solid var(--line); background:var(--card); color:#33413a;
+  font-size:13px; font-weight:800; padding:9px 15px; border-radius:999px; cursor:pointer;
+}
+.chip.active{ background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+.chip small{ display:block; font-size:10px; font-weight:700; opacity:.75; }
+.search{
+  width:100%; border:1px solid var(--line); background:var(--card); border-radius:13px;
+  padding:12px 14px; font-size:14px; margin:2px 0 8px; color:var(--ink);
+}
+.search:focus{ outline:2px solid var(--green); }
+
+/* ---------- Championnats ---------- */
+.leagues-scroll{ display:flex; gap:11px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:none; }
+.leagues-scroll::-webkit-scrollbar{ display:none; }
+.league-card{
+  flex:0 0 108px; background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:14px 10px 12px; text-align:center; cursor:pointer;
+  box-shadow:0 6px 16px rgba(16,24,20,.06);
+}
+.league-card .lflag{ font-size:30px; line-height:1.1; }
+.league-card img{ width:38px; height:38px; object-fit:contain; }
+.league-card b{ display:block; font-size:12.5px; margin-top:7px; line-height:1.25; }
+.league-card span{ font-size:11px; color:var(--muted); font-weight:700; }
+.leagues-grid{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.leagues-grid .league-card{ flex:none; }
+.league-card .lrecord{ font-size:11px; font-weight:800; margin-top:5px; }
+.lrecord .w{ color:var(--won); } .lrecord .l{ color:var(--lost); }
+
+/* ---------- Bilan ---------- */
+.bilan-band{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:15px 16px; box-shadow:0 8px 22px rgba(16,24,20,.06);
+}
+.bilan-nums{ display:flex; gap:10px; text-align:center; }
+.bilan-nums div{ flex:1; }
+.bilan-nums b{ display:block; font-size:21px; font-weight:900; }
+.bilan-nums span{ font-size:11px; color:var(--muted); font-weight:700; }
+.bilan-note{ font-size:11.5px; color:var(--muted); margin-top:9px; line-height:1.45; }
+.day-summary{ display:flex; gap:8px; margin-bottom:12px; }
+.day-summary div{
+  flex:1; background:var(--card); border:1px solid var(--line); border-radius:13px;
+  padding:9px 6px; text-align:center; font-size:11px; color:var(--muted); font-weight:700;
+}
+.day-summary b{ display:block; font-size:16px; color:var(--ink); }
+.day-summary .w b{ color:var(--won); } .day-summary .l b{ color:var(--lost); }
+
+/* ---------- Profil ---------- */
+.profil-card{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:17px; box-shadow:0 8px 22px rgba(16,24,20,.06); margin-bottom:12px;
+}
+.profil-card h3{ font-size:15.5px; font-weight:900; margin-bottom:8px; }
+.profil-card p{ font-size:13.5px; line-height:1.55; color:#33413a; }
+.install-btn{
+  width:100%; border:none; cursor:pointer; background:var(--green-dark); color:#fff;
+  font-weight:900; font-size:15px; padding:14px; border-radius:999px; margin-top:4px;
+}
+
+/* ---------- Divers ---------- */
+.empty{
+  background:var(--card); border:1px dashed #c9d6cc; border-radius:var(--radius);
+  padding:26px 18px; text-align:center; color:var(--muted); font-size:13.5px; line-height:1.55;
+}
+.updated{ text-align:center; font-size:11.5px; color:var(--muted); margin-top:14px; }
+.disclaimer{
+  text-align:center; font-size:11px; color:var(--muted); line-height:1.55;
+  margin-top:16px; padding:0 8px;
+}
+.ios-hint{
+  position:fixed; left:14px; right:14px; bottom:96px; z-index:60;
+  background:#101613; color:#fff; border-radius:14px; padding:13px 15px; font-size:13px;
+  box-shadow:0 14px 30px rgba(0,0,0,.35);
+}
+.ios-hint button{ float:right; background:none; border:none; color:#fff; font-size:15px; cursor:pointer; }
+
+/* ---------- Navigation basse ---------- */
+.bottom-nav{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:12px; z-index:50;
+  width:min(560px, calc(100% - 20px));
+  background:rgba(10,15,13,.96); border-radius:22px; padding:8px 6px;
+  display:flex; box-shadow:0 16px 34px rgba(0,0,0,.35);
+}
+.nav-btn{
+  flex:1; background:none; border:none; cursor:pointer; color:#9fb3a8;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  font-size:10.5px; font-weight:700; padding:6px 2px; border-radius:15px;
+}
+.nav-btn svg{ width:22px; height:22px; }
+.nav-btn.active{ color:#fff; background:rgba(23,185,120,.22); }
+.nav-btn.active svg{ color:var(--green); }
