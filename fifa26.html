@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>FIFA FC 26 — MelBet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #05030a;
+      --card: rgba(12, 6, 24, 0.88);
+      --card-border: rgba(168, 85, 247, 0.45);
+      --purple: #a855f7;
+      --purple-bright: #c084fc;
+      --text: #f5f3ff;
+      --text-muted: #b794f6;
+      --success: #22c55e;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #02010a;
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+    .app {
+      width: 100%;
+      max-width: 430px;
+      min-height: 100dvh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: #05030a;
+      overflow: hidden;
+    }
+
+    /* ========== BACKGROUND (même que maquette) ========== */
+    .bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .bg-stadium {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 130% 90% at 50% -10%, rgba(124, 58, 237, 0.42) 0%, transparent 55%),
+        radial-gradient(ellipse 90% 55% at 15% 25%, rgba(168, 85, 247, 0.32) 0%, transparent 48%),
+        radial-gradient(ellipse 80% 45% at 85% 15%, rgba(91, 33, 182, 0.35) 0%, transparent 42%),
+        linear-gradient(180deg, #0b0516 0%, #05030a 40%, #02010a 100%);
+    }
+    .bg-ball {
+      position: absolute; top: 2%; left: -50px; width: 220px; height: 220px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 25%, #faf5ff 0%, #e9d5ff 10%, #c084fc 25%, #a855f7 45%, #7c3aed 65%, #4c1d95 82%, #2e1065 100%);
+      box-shadow: 0 0 120px rgba(168, 85, 247, 0.7), 0 0 60px rgba(192, 132, 252, 0.5), inset -35px -35px 70px rgba(0,0,0,0.55);
+      opacity: 0.9;
+    }
+    .bg-ball::before { content: ''; position: absolute; inset: 16%; border-radius: 50%; border: 3px solid rgba(255,255,255,0.15); }
+    .bg-ball::after { content: ''; position: absolute; top: 13%; left: 16%; width: 44%; height: 27%; border-radius: 50%; background: rgba(255,255,255,0.22); filter: blur(8px); }
+    .bg-ai-figure { position: absolute; top: -5px; right: -20px; width: 200px; height: 300px; opacity: 0.8; }
+    .ai-head { position: absolute; top: 30px; right: 60px; width: 55px; height: 58px; background: linear-gradient(160deg, rgba(168,85,247,0.6), rgba(91,33,182,0.4)); border-radius: 50% 50% 45% 45%; box-shadow: 0 0 40px rgba(168,85,247,0.5); }
+    .ai-body { position: absolute; top: 78px; right: 25px; width: 115px; height: 160px; background: linear-gradient(180deg, rgba(139,92,246,0.55) 0%, rgba(76,29,149,0.3) 55%, transparent 100%); border-radius: 40% 40% 20% 20%; clip-path: polygon(15% 0%, 85% 0%, 100% 25%, 95% 100%, 5% 100%, 0% 25%); }
+    .ai-label { position: absolute; top: 130px; right: 52px; font-size: 2rem; font-weight: 900; color: rgba(192, 132, 252, 0.65); letter-spacing: 3px; transform: rotate(-6deg); text-shadow: 0 0 30px rgba(168, 85, 247, 0.8); }
+    .bg-glow-line { position: absolute; top: 16%; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(168,85,247,0.5), transparent); }
+
+    /* HEADER */
+    header { position: relative; z-index: 20; padding: 16px 18px 10px; text-align: center; }
+    .logo { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .logo .ia { color: #fff; }
+    .logo .pronostic { color: var(--purple-bright); text-shadow: 0 0 24px rgba(192,132,252,0.65); }
+    .subtitle { font-size: 0.68rem; letter-spacing: 1.8px; color: var(--text-muted); margin-top: 3px; font-weight: 500; text-transform: uppercase; }
+
+    main { flex: 1; position: relative; z-index: 10; padding: 4px 15px 28px; overflow-y: auto; }
+    .page { display: none; animation: fadeIn 0.3s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* CARDS HOME */
+    .card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 16px;
+      padding: 13px 14px; margin-bottom: 11px; backdrop-filter: blur(22px);
+      box-shadow: 0 4px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .card-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 7px; }
+    .card-row { display: flex; align-items: center; gap: 12px; }
+    .card-icon {
+      width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); flex-shrink: 0; overflow: hidden;
+    }
+    .card-icon img { width: 72%; height: 72%; object-fit: contain; }
+    select, input[type="time"] {
+      width: 100%; background: transparent; border: none; color: var(--text); font-family: inherit;
+      font-size: 0.95rem; font-weight: 600; outline: none; appearance: none; cursor: pointer;
+    }
+    select option { background: #1a1028; color: #fff; }
+    .card-arrow { color: var(--text-muted); font-size: 1.15rem; opacity: 0.7; }
+
+    .btn-primary {
+      width: 100%; margin-top: 16px; padding: 16px; border: none; border-radius: 15px;
+      background: linear-gradient(135deg, #9333ea 0%, #7c3aed 45%, #6d28d9 100%);
+      color: white; font-size: 1rem; font-weight: 700; letter-spacing: 0.4px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      box-shadow: 0 0 40px rgba(147, 51, 234, 0.6), 0 8px 24px rgba(0,0,0,0.35);
+      transition: transform 0.15s;
+    }
+    .btn-primary:active { transform: scale(0.97); }
+
+    /* ========== ANALYSE ========== */
+    .analysis-wrap { display: flex; flex-direction: column; align-items: center; padding: 18px 6px 10px; }
+    .analysis-title { font-size: 1.25rem; font-weight: 700; color: var(--purple-bright); margin-bottom: 4px; text-shadow: 0 0 20px rgba(192,132,252,0.4); }
+    .analysis-sub { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 24px; }
+    .progress-ring { position: relative; width: 176px; height: 176px; margin-bottom: 24px; }
+    .progress-ring svg { transform: rotate(-90deg); width: 176px; height: 176px; }
+    .progress-ring circle { fill: none; stroke-width: 10; stroke-linecap: round; }
+    .progress-bg { stroke: rgba(168, 85, 247, 0.12); }
+    .progress-bar { stroke: url(#grad); stroke-dasharray: 490; stroke-dashoffset: 490; transition: stroke-dashoffset 0.3s ease; filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.8)); }
+    .progress-value { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 2.4rem; font-weight: 800; color: var(--purple-bright); text-shadow: 0 0 28px rgba(168, 85, 247, 0.75); }
+    .progress-value small { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); letter-spacing: 1px; }
+    .steps { width: 100%; max-width: 320px; background: rgba(12, 6, 24, 0.7); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 16px; padding: 6px 14px; }
+    .step { display: flex; align-items: center; gap: 12px; padding: 10px 0; font-size: 0.88rem; color: var(--text-muted); border-bottom: 1px solid rgba(168, 85, 247, 0.08); }
+    .step:last-child { border-bottom: none; }
+    .step.done { color: var(--text); }
+    .step.done .step-icon { color: var(--success); }
+    .step.active { color: var(--purple-bright); }
+    .step-icon { width: 22px; text-align: center; font-size: 1rem; }
+    .step-spinner { width: 15px; height: 15px; border: 2px solid rgba(168, 85, 247, 0.3); border-top-color: var(--purple-bright); border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ai-note { margin-top: 20px; padding: 13px 15px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 14px; font-size: 0.8rem; color: var(--text-muted); text-align: center; line-height: 1.45; display: flex; align-items: flex-start; gap: 10px; }
+    .ai-note span { font-size: 1.25rem; }
+
+    /* ========== PAGE RÉSULTAT (fidèle maquette) ========== */
+    .res-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 2px;
+    }
+    .res-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .res-bot {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 0 0 18px rgba(168,85,247,0.5);
+    }
+    .res-header-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      line-height: 1.2;
+    }
+    .res-header-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 1px;
+    }
+    .res-date {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: right;
+      line-height: 1.35;
+    }
+
+    .match-card {
+      background: rgba(12, 6, 24, 0.9);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      border-radius: 18px;
+      padding: 18px 12px 14px;
+      margin-bottom: 12px;
+      backdrop-filter: blur(20px);
+    }
+    .teams-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .team-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .team-badge {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(168, 85, 247, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
+      overflow: hidden;
+      padding: 9px;
+    }
+    .team-badge img { width: 100%; height: 100%; object-fit: contain; }
+    .team-badge .fallback { font-size: 1.1rem; font-weight: 800; color: var(--purple-bright); }
+    .team-name { font-weight: 600; font-size: 0.88rem; text-align: center; }
+    .team-role {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      background: rgba(168, 85, 247, 0.2);
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .vs {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--purple-bright);
+      text-shadow: 0 0 24px rgba(168, 85, 247, 1);
+      padding: 0 2px;
+    }
+
+    .info-bar {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(168, 85, 247, 0.2);
+    }
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+    .info-item strong { color: var(--text); font-weight: 600; font-size: 0.78rem; }
+    .info-item .ico { font-size: 0.95rem; margin-bottom: 1px; }
+
+    /* PRONOSTIC CARD (exactement comme maquette) */
+    .pronostic-card {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.35), rgba(88, 28, 135, 0.5));
+      border: 1px solid rgba(192, 132, 252, 0.6);
+      border-radius: 18px;
+      padding: 18px 14px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 50px rgba(147, 51, 234, 0.4);
+      margin-bottom: 14px;
+    }
+    .pronostic-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(192, 132, 252, 0.2) 0%, transparent 55%);
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+    .pronostic-label {
+      font-size: 0.7rem;
+      letter-spacing: 1.8px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .pronostic-value {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 0 32px rgba(192, 132, 252, 0.95);
+      position: relative;
+      letter-spacing: 0.4px;
+    }
+    .pronostic-sub {
+      margin-top: 7px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      position: relative;
+    }
+
+    .features {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .feature {
+      flex: 1;
+      text-align: center;
+      padding: 12px 4px;
+      background: rgba(12, 6, 24, 0.75);
+      border-radius: 12px;
+      border: 1px solid rgba(168, 85, 247, 0.22);
+    }
+    .feature-icon { font-size: 1.2rem; margin-bottom: 3px; }
+    .feature-text { font-size: 0.62rem; color: var(--text-muted); line-height: 1.3; font-weight: 500; }
+
+    .btn-retour {
+      width: 100%;
+      margin-top: 14px;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 0 25px rgba(124, 58, 237, 0.4);
+    }
+
+    .footer-brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      padding: 0 4px;
+      font-size: 0.62rem;
+      color: rgba(167, 139, 250, 0.55);
+    }
+    .footer-brand .left { display: flex; align-items: center; gap: 5px; }
+
+    /* ========== RECHERCHE D'ÉQUIPE (suggestions) ========== */
+    .search-card { position: relative; }
+    input.team-search {
+      width: 100%; background: transparent; border: none; color: var(--text); font-family: inherit;
+      font-size: 0.95rem; font-weight: 600; outline: none; cursor: text;
+    }
+    input.team-search::placeholder { color: var(--text-muted); opacity: 0.65; font-weight: 500; }
+    .suggestions {
+      position: static; margin-top: 10px;
+      background: rgba(21, 11, 40, 0.85); border: 1px solid var(--card-border); border-radius: 14px;
+      overflow: hidden; display: none;
+      max-height: 302px; overflow-y: auto;
+    }
+    .suggestions.open { display: block; }
+    .sugg {
+      display: flex; align-items: center; gap: 11px; padding: 9px 12px; cursor: pointer;
+      border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+    }
+    .sugg:last-child { border-bottom: none; }
+    .sugg:hover, .sugg.active { background: rgba(168, 85, 247, 0.18); }
+    .sugg img { width: 27px; height: 27px; object-fit: contain; flex-shrink: 0; }
+    .sugg .sugg-fallback {
+      width: 27px; height: 27px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(168, 85, 247, 0.25); color: var(--purple-bright);
+      display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 800;
+    }
+    .sugg .sugg-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .sugg-none { padding: 13px; text-align: center; font-size: 0.82rem; color: var(--text-muted); }
+
+    /* ========== INTERVALLE DOMICILE ========== */
+    .interval-row { display: flex; gap: 8px; }
+    .interval-chip {
+      flex: 1; padding: 12px 4px; border-radius: 12px; cursor: pointer; text-align: center;
+      background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.32);
+      color: var(--text); font-family: inherit; font-size: 0.86rem; font-weight: 700;
+      transition: all 0.15s;
+    }
+    .interval-chip.on {
+      background: linear-gradient(135deg, #9333ea, #6d28d9); border-color: rgba(192, 132, 252, 0.7);
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); color: #fff;
+    }
+
+    /* ========== NOTE TIRAGE (résultat) ========== */
+    .random-note {
+      margin: 2px 0 14px; padding: 11px 13px; text-align: center;
+      background: rgba(12, 6, 24, 0.7); border: 1px dashed rgba(168, 85, 247, 0.35);
+      border-radius: 12px; font-size: 0.74rem; line-height: 1.5; color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="bg">
+      <div class="bg-stadium"></div>
+      <div class="bg-ball"></div>
+      <div class="bg-ai-figure">
+        <div class="ai-head"></div>
+        <div class="ai-body"></div>
+        <div class="ai-label">AI</div>
+      </div>
+      <div class="bg-glow-line"></div>
+    </div>
+
+    <header>
+      <div class="logo"><span class="ia">FIFA</span> <span class="pronostic">FC 26</span></div>
+      <div class="subtitle">Vos pronostics, notre IA</div>
+    </header>
+
+    <main>
+      <!-- ACCUEIL -->
+      <section id="page-home" class="page active">
+        <div class="card">
+          <div class="card-label">Bookmaker</div>
+          <div class="card-row">
+            <div class="card-icon" style="background:#fbbf24;color:#000;font-weight:900;font-size:1.15rem;">M</div>
+            <select id="bookmaker">
+              <option value="MelBet">MelBet</option>
+            </select>
+            <div class="card-arrow">›</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Jeu virtuel (FIFA)</div>
+          <div class="card-row">
+            <div class="card-icon">🎮</div>
+            <div style="width:100%;font-size:0.95rem;font-weight:600;">FIFA FC 26</div>
+          </div>
+        </div>
+        <div class="card search-card">
+          <div class="card-label">Équipe domicile</div>
+          <div class="card-row">
+            <div class="card-icon" id="home-icon-wrap">🏠</div>
+            <input type="text" id="home-team" class="team-search" placeholder="Tape le nom de l’équipe…" autocomplete="off">
+            <div class="card-arrow">›</div>
+          </div>
+          <div class="suggestions" id="home-suggestions"></div>
+        </div>
+        <div class="card search-card">
+          <div class="card-label">Équipe extérieure</div>
+          <div class="card-row">
+            <div class="card-icon" id="away-icon-wrap">✈️</div>
+            <input type="text" id="away-team" class="team-search" placeholder="Tape le nom de l’équipe…" autocomplete="off">
+            <div class="card-arrow">›</div>
+          </div>
+          <div class="suggestions" id="away-suggestions"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Victoire équipe à domicile — Intervalle</div>
+          <div class="interval-row" id="interval-row">
+            <button type="button" class="interval-chip" data-val="01 à 05">01 à 05</button>
+            <button type="button" class="interval-chip" data-val="05 à 10">05 à 10</button>
+            <button type="button" class="interval-chip" data-val="10 à 15 ou plus">10 à 15 ou +</button>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="startAnalysis()">🔍 LANCER L’ANALYSE</button>
+      </section>
+
+      <!-- ANALYSE -->
+      <section id="page-analysis" class="page">
+        <div class="analysis-wrap">
+          <div class="analysis-title">Analyse IA en cours…</div>
+          <div class="analysis-sub">L’IA scanne le profil du FIFA et des équipes</div>
+          <div class="progress-ring">
+            <svg viewBox="0 0 176 176">
+              <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#e9d5ff" />
+                  <stop offset="40%" stop-color="#c084fc" />
+                  <stop offset="100%" stop-color="#7c3aed" />
+                </linearGradient>
+              </defs>
+              <circle class="progress-bg" cx="88" cy="88" r="78" />
+              <circle class="progress-bar" id="progress-circle" cx="88" cy="88" r="78" />
+            </svg>
+            <div class="progress-value"><span id="progress-text">0%</span><small>TRAITEMENT</small></div>
+          </div>
+          <div class="steps" id="steps-list">
+            <div class="step" data-step="0"><div class="step-icon">○</div><span>Analyse du FIFA sélectionné</span></div>
+            <div class="step" data-step="1"><div class="step-icon">○</div><span>Analyse du profil de buts</span></div>
+            <div class="step" data-step="2"><div class="step-icon">○</div><span>Comparaison des équipes</span></div>
+            <div class="step" data-step="3"><div class="step-icon">○</div><span>Sélection du marché</span></div>
+            <div class="step" data-step="4"><div class="step-icon">○</div><span>Génération du pronostic…</span></div>
+          </div>
+          <div class="ai-note"><span>🧠</span><div>Un seul pronostic est généré pour ce match : TOTAL PAIR OUI ou TOTAL PAIR NON.</div></div>
+        </div>
+      </section>
+
+      <!-- RÉSULTAT (disposition + couleurs maquette) -->
+      <section id="page-result" class="page">
+        <div class="res-header">
+          <div class="res-header-left">
+            <div class="res-bot">🤖</div>
+            <div>
+              <div class="res-header-title">RÉSULTAT DE L’ANALYSE</div>
+              <div class="res-header-sub">Analyse terminée avec succès</div>
+            </div>
+          </div>
+          <div class="res-date" id="result-date"></div>
+        </div>
+
+        <div class="match-card">
+          <div class="teams-row">
+            <div class="team-box">
+              <div class="team-badge" id="res-home-logo"></div>
+              <div class="team-name" id="res-home-name">—</div>
+              <div class="team-role">Équipe domicile</div>
+            </div>
+            <div class="vs">VS</div>
+            <div class="team-box">
+              <div class="team-badge" id="res-away-logo"></div>
+              <div class="team-name" id="res-away-name">—</div>
+              <div class="team-role">Équipe extérieure</div>
+            </div>
+          </div>
+          <div class="info-bar">
+            <div class="info-item"><div class="ico">🎰</div><span>Bookmaker</span><strong id="res-bookmaker">MelBet</strong></div>
+            <div class="info-item"><div class="ico">🎮</div><span>Jeu virtuel</span><strong id="res-game">—</strong></div>
+            <div class="info-item"><div class="ico">🏠</div><span>Intervalle domicile</span><strong id="res-interval">—</strong></div>
+          </div>
+        </div>
+
+        <div class="pronostic-card">
+          <div class="pronostic-label">🔥 PRONOSTIC</div>
+          <div class="pronostic-value" id="res-pronostic">PLUS DE 2.5 BUTS</div>
+          <div class="pronostic-sub" id="res-sub">Match à fort potentiel offensif</div>
+        </div>
+
+        <div class="random-note">🎲 Pronostic tiré au hasard entre TOTAL PAIR OUI et TOTAL PAIR NON (50/50). Les matchs virtuels sont générés aléatoirement : aucun résultat n’est garanti.</div>
+
+        <div class="features">
+          <div class="feature"><div class="feature-icon">🎯</div><div class="feature-text">Pronostic<br>unique</div></div>
+          <div class="feature"><div class="feature-icon">🎲</div><div class="feature-text">Tirage<br>aléatoire</div></div>
+          <div class="feature"><div class="feature-icon">⚡</div><div class="feature-text">Analyse<br>rapide</div></div>
+        </div>
+
+        <button class="btn-retour" onclick="goHome()">← Retour</button>
+
+        <div class="footer-brand">
+          <div class="left">👑 FIFA FC 26 · Vos pronostics, notre IA</div>
+          <div>📊 Des données aux victoires</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /* ===== FIFA FC 26 uniquement — équipes relevées sur MelBet, logos réels vérifiés ===== */
+    const API = "https://media.api-sports.io/football/teams/";
+    const FLAG = "https://flagcdn.com/w160/";
+    const TEAMS = [
+      {nom:"Atlético Madrid", short:"ATM", logo:"https://media.api-sports.io/football/teams/530.png"},
+      {nom:"FC Porto", short:"POR", logo:"https://media.api-sports.io/football/teams/212.png"},
+      {nom:"Bayer Leverkusen", short:"LEV", logo:"https://media.api-sports.io/football/teams/168.png"},
+      {nom:"Olympique Lyonnais", short:"OL", logo:"https://media.api-sports.io/football/teams/80.png", k:"lyon"},
+      {nom:"FC Barcelone", short:"BAR", logo:"https://media.api-sports.io/football/teams/529.png", k:"barca barcelona"},
+      {nom:"Roma", short:"ROM", logo:"https://media.api-sports.io/football/teams/497.png"},
+      {nom:"Chelsea", short:"CHE", logo:"https://media.api-sports.io/football/teams/49.png"},
+      {nom:"Borussia Dortmund", short:"BVB", logo:"https://media.api-sports.io/football/teams/165.png"},
+      {nom:"Brighton", short:"BHA", logo:"https://media.api-sports.io/football/teams/51.png"},
+      {nom:"Nottingham Forest", short:"NFO", logo:"https://media.api-sports.io/football/teams/65.png"},
+      {nom:"Manchester United", short:"MUN", logo:"https://media.api-sports.io/football/teams/33.png", k:"man utd"},
+      {nom:"Manchester City", short:"MCI", logo:"https://media.api-sports.io/football/teams/50.png", k:"man city"},
+      {nom:"Newcastle United", short:"NEW", logo:"https://media.api-sports.io/football/teams/34.png"},
+      {nom:"Tottenham Hotspur", short:"TOT", logo:"https://media.api-sports.io/football/teams/47.png", k:"spurs"},
+      {nom:"Burnley", short:"BUR", logo:"https://media.api-sports.io/football/teams/44.png"},
+      {nom:"Bayern Munich", short:"BAY", logo:"https://media.api-sports.io/football/teams/157.png"},
+      {nom:"Sporting Portugal", short:"SCP", logo:"https://media.api-sports.io/football/teams/228.png"},
+      {nom:"Bergamo Calcio", short:"BER", logo:"https://media.api-sports.io/football/teams/499.png", k:"atalanta"},
+      {nom:"Lombardia", short:"LOM", logo:"https://media.api-sports.io/football/teams/505.png", k:"inter milan"},
+      {nom:"Galatasaray", short:"GAL", logo:"https://media.api-sports.io/football/teams/645.png"},
+      {nom:"Olympiacos", short:"OLY", logo:"https://media.api-sports.io/football/teams/553.png"},
+      {nom:"Eintracht Francfort", short:"SGE", logo:"https://media.api-sports.io/football/teams/169.png", k:"frankfurt"},
+      {nom:"Fribourg", short:"SCF", logo:"https://media.api-sports.io/football/teams/160.png", k:"freiburg"},
+      {nom:"Hambourg", short:"HSV", logo:"https://media.api-sports.io/football/teams/175.png"},
+      {nom:"St. Pauli", short:"STP", logo:"https://media.api-sports.io/football/teams/186.png"},
+      {nom:"Leipzig", short:"RBL", logo:"https://media.api-sports.io/football/teams/173.png"},
+      {nom:"Heidenheim", short:"HEI", logo:"https://media.api-sports.io/football/teams/180.png"},
+      {nom:"Stuttgart", short:"VFB", logo:"https://media.api-sports.io/football/teams/172.png"},
+      {nom:"Wolfsburg", short:"WOB", logo:"https://media.api-sports.io/football/teams/161.png"},
+      {nom:"Werder Brême", short:"SVW", logo:"https://media.api-sports.io/football/teams/162.png", k:"bremen"},
+      {nom:"Athletic Bilbao", short:"ATH", logo:"https://media.api-sports.io/football/teams/531.png"},
+      {nom:"Real Madrid", short:"RMA", logo:"https://media.api-sports.io/football/teams/541.png"},
+      {nom:"Gérone", short:"GIR", logo:"https://media.api-sports.io/football/teams/547.png", k:"girona"},
+      {nom:"Levante", short:"LUD", logo:"https://media.api-sports.io/football/teams/539.png"},
+      {nom:"Celta Vigo", short:"CEL", logo:"https://media.api-sports.io/football/teams/538.png"},
+      {nom:"Alavés", short:"ALA", logo:"https://media.api-sports.io/football/teams/542.png"},
+      {nom:"Getafe", short:"GET", logo:"https://media.api-sports.io/football/teams/546.png"},
+      {nom:"Séville", short:"SEV", logo:"https://media.api-sports.io/football/teams/536.png", k:"sevilla"},
+      {nom:"Valence", short:"VAL", logo:"https://media.api-sports.io/football/teams/532.png", k:"valencia"},
+      {nom:"Real Sociedad", short:"RSO", logo:"https://media.api-sports.io/football/teams/548.png"},
+      {nom:"Lecce", short:"LEC", logo:"https://media.api-sports.io/football/teams/867.png"},
+      {nom:"Cagliari", short:"CAG", logo:"https://media.api-sports.io/football/teams/490.png"},
+      {nom:"Juventus", short:"JUV", logo:"https://media.api-sports.io/football/teams/496.png", k:"juve"},
+      {nom:"Pise", short:"PIS", logo:null},
+      {nom:"Sassuolo", short:"SAS", logo:"https://media.api-sports.io/football/teams/488.png"},
+      {nom:"Fiorentina", short:"FIO", logo:"https://media.api-sports.io/football/teams/502.png"},
+      {nom:"Hellas Vérone", short:"VER", logo:"https://media.api-sports.io/football/teams/504.png", k:"verona"},
+      {nom:"Paris Saint-Germain", short:"PSG", logo:"https://media.api-sports.io/football/teams/85.png", k:"psg paris"},
+      {nom:"Liverpool", short:"LIV", logo:"https://media.api-sports.io/football/teams/40.png"},
+      {nom:"Angleterre", short:"ENG", logo:"https://flagcdn.com/w160/gb-eng.png", k:"england"},
+      {nom:"Ghana", short:"GHA", logo:"https://flagcdn.com/w160/gh.png"},
+      {nom:"Argentine", short:"ARG", logo:"https://flagcdn.com/w160/ar.png"},
+      {nom:"Portugal", short:"POR", logo:"https://flagcdn.com/w160/pt.png"},
+      {nom:"Italie", short:"ITA", logo:"https://flagcdn.com/w160/it.png"},
+      {nom:"États-Unis", short:"USA", logo:"https://flagcdn.com/w160/us.png", k:"usa"},
+      {nom:"Norvège", short:"NOR", logo:"https://flagcdn.com/w160/no.png"}
+    ];
+    const GAME = { nom: "FC 26", equipes: TEAMS };
+
+    /* ===== Pronostics : tirage aléatoire entre TOTAL PAIR OUI / NON ===== */
+    const PRONOSTICS = [
+      { text: "TOTAL PAIR OUI", sub: "Marché : total de buts pair — Oui" },
+      { text: "TOTAL PAIR NON", sub: "Marché : total de buts pair — Non" }
+    ];
+
+    let selectedHome = null;
+    let selectedAway = null;
+    let selectedInterval = null;
+
+    function getCurrentFifa() { return GAME; }
+
+    function normStr(s) { return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+    function setIcon(side, team) {
+      const wrap = document.getElementById(side + '-icon-wrap');
+      const def = side === 'home' ? '🏠' : '✈️';
+      wrap.innerHTML = team && team.logo
+        ? `<img src="${team.logo}" alt="${team.nom}" onerror="this.parentElement.innerHTML='${def}'">`
+        : def;
+    }
+
+    /* ===== Recherche intelligente : suggestions DANS la même carte ===== */
+    function setupSearch(side) {
+      const input = document.getElementById(side + '-team');
+      const box = document.getElementById(side + '-suggestions');
+      let results = [];
+      let active = -1;
+
+      function close() { box.classList.remove('open'); box.innerHTML = ''; results = []; active = -1; }
+
+      function render() {
+        const q = normStr(input.value).trim();
+        if (!q) { close(); return; }
+        results = getCurrentFifa().equipes.filter(t =>
+          normStr(t.nom).includes(q) || (t.k && normStr(t.k).includes(q))
+        ).slice(0, 8);
+        active = results.length ? 0 : -1;
+        if (!results.length) {
+          box.innerHTML = '<div class="sugg-none">Aucune équipe FC 26 trouvée</div>';
+        } else {
+          box.innerHTML = results.map((t, i) =>
+            `<div class="sugg${i === active ? ' active' : ''}" data-i="${i}">` +
+            (t.logo ? `<img src="${t.logo}" alt="" onerror="this.outerHTML='<span class=\\'sugg-fallback\\'>${t.short}</span>'">` : `<span class="sugg-fallback">${t.short}</span>`) +
+            `<span class="sugg-name">${t.nom}</span></div>`
+          ).join('');
+          box.querySelectorAll('.sugg').forEach(el => {
+            el.addEventListener('mousedown', e => {
+              e.preventDefault();
+              pick(results[parseInt(el.dataset.i, 10)]);
+            });
+          });
+        }
+        box.classList.add('open');
+      }
+
+      function pick(team) {
+        if (!team) return;
+        const otherSel = side === 'home' ? selectedAway : selectedHome;
+        if (otherSel && otherSel.nom === team.nom) {
+          alert('Choisis deux équipes différentes 🔥');
+          return;
+        }
+        if (side === 'home') selectedHome = team; else selectedAway = team;
+        input.value = team.nom;
+        setIcon(side, team);
+        close();
+      }
+
+      input.addEventListener('input', () => {
+        if (side === 'home') selectedHome = null; else selectedAway = null;
+        setIcon(side, null);
+        render();
+      });
+      input.addEventListener('focus', render);
+      input.addEventListener('blur', () => setTimeout(close, 130));
+      input.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (!results.length) return;
+          active = e.key === 'ArrowDown' ? Math.min(active + 1, results.length - 1) : Math.max(active - 1, 0);
+          box.querySelectorAll('.sugg').forEach((el, i) => el.classList.toggle('active', i === active));
+        } else if (e.key === 'Enter') {
+          if (active >= 0 && results[active]) { e.preventDefault(); pick(results[active]); }
+        } else if (e.key === 'Escape') { close(); }
+      });
+
+      return { input, close };
+    }
+    const searchHome = setupSearch('home');
+    const searchAway = setupSearch('away');
+
+    function updateTeams() {
+      selectedHome = null;
+      selectedAway = null;
+      searchHome.input.value = '';
+      searchAway.input.value = '';
+      searchHome.close();
+      searchAway.close();
+      setIcon('home', null);
+      setIcon('away', null);
+    }
+
+    /* ===== Intervalle domicile ===== */
+    document.querySelectorAll('.interval-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const wasOn = chip.classList.contains('on');
+        document.querySelectorAll('.interval-chip').forEach(c => c.classList.remove('on'));
+        if (!wasOn) { chip.classList.add('on'); selectedInterval = chip.dataset.val; }
+        else { selectedInterval = null; }
+      });
+    });
+
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function goHome() { showPage('page-home'); }
+
+    function generatePronostic() {
+      return PRONOSTICS[Math.floor(Math.random() * PRONOSTICS.length)];
+    }
+
+    let analysisInterval = null;
+    function startAnalysis() {
+      if (!selectedHome || !selectedAway) {
+        alert('Sélectionne les deux équipes dans les suggestions 🔥');
+        return;
+      }
+      if (selectedHome.nom === selectedAway.nom) {
+        alert('Choisis deux équipes différentes 🔥');
+        return;
+      }
+      showPage('page-analysis');
+      const circle = document.getElementById('progress-circle');
+      const text = document.getElementById('progress-text');
+      const steps = document.querySelectorAll('.step');
+      circle.style.strokeDashoffset = 490;
+      text.textContent = '0%';
+      steps.forEach(s => {
+        s.classList.remove('done', 'active');
+        s.querySelector('.step-icon').textContent = '○';
+        s.querySelector('.step-icon').style.color = '';
+      });
+
+      let progress = 0, currentStep = 0;
+      const totalDuration = 4500, intervalTime = 40, increment = 100 / (totalDuration / intervalTime);
+      if (analysisInterval) clearInterval(analysisInterval);
+      analysisInterval = setInterval(() => {
+        progress += increment;
+        if (progress > 100) progress = 100;
+        circle.style.strokeDashoffset = 490 - (490 * progress / 100);
+        text.textContent = Math.floor(progress) + '%';
+        const stepThreshold = (currentStep + 1) * 20;
+        if (progress >= stepThreshold && currentStep < 5) {
+          const stepEl = steps[currentStep];
+          stepEl.classList.add('done');
+          stepEl.querySelector('.step-icon').textContent = '✓';
+          stepEl.querySelector('.step-icon').style.color = 'var(--success)';
+          if (currentStep < 4) {
+            steps[currentStep + 1].classList.add('active');
+            steps[currentStep + 1].querySelector('.step-icon').innerHTML = '<div class="step-spinner"></div>';
+          }
+          currentStep++;
+        }
+        if (progress >= 100) {
+          clearInterval(analysisInterval);
+          setTimeout(showResult, 500);
+        }
+      }, intervalTime);
+    }
+
+    function showResult() {
+      const bookmaker = document.getElementById('bookmaker').value;
+      const fifa = getCurrentFifa();
+      const home = selectedHome;
+      const away = selectedAway;
+      const p = generatePronostic();
+
+      document.getElementById('res-home-name').textContent = home.nom;
+      document.getElementById('res-away-name').textContent = away.nom;
+
+      const homeLogo = document.getElementById('res-home-logo');
+      const awayLogo = document.getElementById('res-away-logo');
+      homeLogo.innerHTML = home.logo
+        ? `<img src="${home.logo}" alt="${home.nom}" onerror="this.parentElement.innerHTML='<span class=\\'fallback\\'>${home.short}</span>'">`
+        : `<span class="fallback">${home.short}</span>`;
+      awayLogo.innerHTML = away.logo
+        ? `<img src="${away.logo}" alt="${away.nom}" onerror="this.parentElement.innerHTML='<span class=\\'fallback\\'>${away.short}</span>'">`
+        : `<span class="fallback">${away.short}</span>`;
+
+      document.getElementById('res-bookmaker').textContent = bookmaker;
+      document.getElementById('res-game').textContent = fifa.nom;
+      document.getElementById('res-interval').textContent = selectedInterval || '—';
+      document.getElementById('res-pronostic').textContent = p.text;
+      document.getElementById('res-sub').textContent = p.sub;
+
+      const now = new Date();
+      document.getElementById('result-date').innerHTML =
+        now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) +
+        '<br>' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+      showPage('page-result');
+    }
+
+    updateTeams();
+
+  </script>
+</body>
+</html>
