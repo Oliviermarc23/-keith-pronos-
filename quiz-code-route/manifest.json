@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "Quiz Code de la Route — Côte d’Ivoire",
+  "short_name": "Quiz Code",
+  "description": "Entraînement au code de la route : 303 questions, 25 thèmes, séries aléatoires et examen blanc.",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EEF2FA",
+  "theme_color": "#0B2A5B",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
