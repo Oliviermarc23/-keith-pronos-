@@ -81,7 +81,7 @@
 </div>
 <script>
 const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
-const PICKS_KEY = "jeux-virtuels-picks-v6";
+const PICKS_KEY = "jeux-virtuels-picks-v7";
 let allMatches = [];
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
@@ -96,19 +96,20 @@ function probs(m){
   const s = i1+iX+i2; if(!s) return null;
   return { p1:i1/s, pX:iX/s, p2:i2/s };
 }
-// RÈGLES MAISON v5 — version affinée (2e analyse), objectif : VALIDER LE PLUS.
-// - Double chance qui exclut l'issue la moins probable (1X, 12 ou X2),
-//   jamais le nul seul, jamais de victoire seule (seuil victoire = 1).
+// RÈGLES MAISON v6 — MIXTE, choix de Marc : victoire si favori fort,
+// sinon double chance qui exclut l'issue la moins probable.
+// - Seuil victoire : 65 % (compromis entre les 70 % de Claude et les 65 %
+//   de la 2e analyse). Au-dessus : victoire seule, avec la VRAIE cote.
+// - En dessous : double chance (1X, 12 ou X2), cote « ≈ » estimée à partir
+//   des cotes brutes, 1 / (1/cote_a + 1/cote_b), sans marge inventée.
 // - Probabilités normalisées (marge retirée).
-// - Cote affichée « ≈ » : estimée à partir des cotes brutes,
-//   1 / (1/cote_a + 1/cote_b), sans marge inventée.
 // - Garde-fous : cotes absentes/invalides (≤ 1) ou somme des inverses
 //   hors [1 ; 1,3] (cotes incohérentes) → pas de pronostic.
 // - Pronostic marqué « direct » si le match était déjà en cours à la
 //   capture ; quasi acquis si la plus petite cote ≤ 1,05. Les deux sont
 //   exclus du bilan prématch (ils gonfleraient le taux).
-// Écart assumé : garde-fou gardé à cote > 1 (et non > 1,001), car les
-// cotes live à 1,001 sont fréquentes dans ce flux.
+// - AUCUNE explication affichée sur l'interface : ni ligne de règles,
+//   ni ligne de bilan. Le suivi reste enregistré en local, invisible.
 function makePick(m){
   const o = m.odds1x2 || {};
   const vals = [o["1"], o.X, o["2"]].map(Number);
@@ -120,10 +121,12 @@ function makePick(m){
   const cote2 = (a, b) => Math.max(1.01, +(1 / (r[a] + r[b])).toFixed(2));
   const live = !!m.isLive;
   const quasi = Math.min(...vals) <= 1.05;
+  if(p.p1 >= 0.65) return { code:"1", label:"Victoire " + m.team1, market:"1X2", prob:p.p1, odd:vals[0], live, quasi, estimee:false };
+  if(p.p2 >= 0.65) return { code:"2", label:"Victoire " + m.team2, market:"1X2", prob:p.p2, odd:vals[2], live, quasi, estimee:false };
   const mn = Math.min(p.p1, p.pX, p.p2);
-  if(mn === p.p2){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:cote2(0, 1), live, quasi }; }
-  if(mn === p.p1){ const pr = p.pX + p.p2; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:cote2(1, 2), live, quasi }; }
-  const pr = p.p1 + p.p2; return { code:"12", label:m.team1 + " ou " + m.team2, market:"Double chance", prob:pr, odd:cote2(0, 2), live, quasi };
+  if(mn === p.p2){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:cote2(0, 1), live, quasi, estimee:true }; }
+  if(mn === p.p1){ const pr = p.pX + p.p2; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:cote2(1, 2), live, quasi, estimee:true }; }
+  const pr = p.p1 + p.p2; return { code:"12", label:m.team1 + " ou " + m.team2, market:"Double chance", prob:pr, odd:cote2(0, 2), live, quasi, estimee:true };
 }
 function parseScore(score){
   const r = (score||"").match(/(\d+)\s*[-:]\s*(\d+)/);
@@ -203,7 +206,7 @@ function matchCard(m, picks){
     center = '<div class="vs">VS</div><div class="time-blue">' + fmtTime(m.start) + '</div><div class="mins">' + minsTo(m.start) + '</div>';
   }
   const o = m.odds1x2 || {};
-  const prono = t ? '<div class="prono"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %' + (t.pick.live ? ' · DIRECT' : '') + '</small></div><div class="cote">≈' + Number(t.pick.odd).toFixed(2) + '</div></div>'
+  const prono = t ? '<div class="prono"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %' + (t.pick.live ? ' · DIRECT' : '') + '</small></div><div class="cote">' + (t.pick.estimee ? '≈' : '') + Number(t.pick.odd).toFixed(2) + '</div></div>'
     : '<div class="prono"><div class="label">Pronostic indisponible<small>Cotes indisponibles ou incomplètes</small></div><div class="cote">—</div></div>';
   return '<article class="card click" onclick="openMatch(' + m.id + ')">'
     + '<div class="teams">'
@@ -239,17 +242,14 @@ function render(){
     let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span></div>'
       + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
       + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
-      + '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Double chance qui exclut l’issue la moins probable — cote ≈ estimée.</p>'
-      + (function(){ let v = 0, tot = 0, att = 0; for(const t of Object.values(picks)){ if(t.finished){ if(!t.pick.live && !t.pick.quasi){ tot++; if(t.verdict === "valide") v++; } } else att++; } const taux = tot ? Math.round(v / tot * 100) + " %" : "—"; return '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Bilan prématch sur ton téléphone : ' + v + ' validés ✓ / ' + tot + ' jugés · ' + taux + ' · ' + att + ' en attente (directs exclus).</p>'; })()
     {
-      html += '<div class="grid2">';
+      // Liste plein largeur, comme la capture : logo à gauche, nom, puis
+      // « FIFA · X en direct · Y matchs », chevron à droite.
       for(const [name, e] of list){
-        html += '<div class="league-card" data-league="' + esc(name) + '" onclick="openLeague(this.getAttribute(\'data-league\'))">'
-          + (e.live ? '<span class="live-badge">● ' + e.live + '</span>' : '')
+        html += '<div class="champ" data-league="' + esc(name) + '" onclick="openLeague(this.getAttribute(\'data-league\'))">'
           + logoHTML(e.logo, name)
-          + '<div class="lname">' + esc(name) + '</div><div class="meta">' + e.n + ' matchs</div></div>';
+          + '<span><span class="name">' + esc(name) + '</span><br><span class="meta">FIFA · ' + e.live + ' en direct · ' + e.n + ' matchs</span></span><span class="chev">›</span></div>';
       }
-      html += '</div>';
       if(!list.length) html += '<p class="muted">Aucun match pour le moment.</p>';
     }
     app.innerHTML = html;
@@ -289,7 +289,7 @@ function render(){
         + '<div class="pill"><span class="k">V1 · ' + esc(m.team1) + '</span><span class="v">' + fmtOdd(o["1"]) + (p ? ' <small style="color:#00a651">' + Math.round(p.p1*100) + '%</small>' : '') + '</span></div>'
         + '<div class="pill"><span class="k">X · Nul</span><span class="v">' + fmtOdd(o.X) + (p ? ' <small style="color:#00a651">' + Math.round(p.pX*100) + '%</small>' : '') + '</span></div>'
         + '<div class="pill"><span class="k">V2 · ' + esc(m.team2) + '</span><span class="v">' + fmtOdd(o["2"]) + (p ? ' <small style="color:#00a651">' + Math.round(p.p2*100) + '%</small>' : '') + '</span></div></div>'
-        + (t ? '<div class="prono" style="margin-top:14px"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %' + (t.pick.live ? ' · DIRECT' : '') + '</small></div><div class="cote">≈' + Number(t.pick.odd).toFixed(2) + '</div></div><p style="text-align:center;font-weight:800">' + (t.verdict === "valide" ? '<span style="color:#00a651">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#f44336">ÉCHOUÉ ✕</span>' : t.finished ? esc(t.verdict) : 'EN COURS') + '</p>' : '<p class="muted">Pronostic indisponible.</p>')
+        + (t ? '<div class="prono" style="margin-top:14px"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %' + (t.pick.live ? ' · DIRECT' : '') + '</small></div><div class="cote">' + (t.pick.estimee ? '≈' : '') + Number(t.pick.odd).toFixed(2) + '</div></div><p style="text-align:center;font-weight:800">' + (t.verdict === "valide" ? '<span style="color:#00a651">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#f44336">ÉCHOUÉ ✕</span>' : t.finished ? esc(t.verdict) : 'EN COURS') + '</p>' : '<p class="muted">Pronostic indisponible.</p>')
         + (m.marketCount ? '<div class="foot">+' + m.marketCount + ' paris disponibles</div>' : '') + '</div>';
     }
     app.innerHTML = html;
