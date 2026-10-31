@@ -87,7 +87,7 @@
 <div class="bilan-bar" id="bilan-bar"><button onclick="showBilan()">📊 Bilan</button></div>
 <script>
 const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
-const PICKS_KEY = "jeux-virtuels-picks-v7";
+const PICKS_KEY = "jeux-virtuels-picks-v8";
 let allMatches = [];
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
@@ -102,20 +102,17 @@ function probs(m){
   const s = i1+iX+i2; if(!s) return null;
   return { p1:i1/s, pX:iX/s, p2:i2/s };
 }
-// RÈGLES MAISON v6 — MIXTE, choix de Marc : victoire si favori fort,
-// sinon double chance qui exclut l'issue la moins probable.
-// - Seuil victoire : 65 % (compromis entre les 70 % de Claude et les 65 %
-//   de la 2e analyse). Au-dessus : victoire seule, avec la VRAIE cote.
-// - En dessous : double chance (1X, 12 ou X2), cote « ≈ » estimée à partir
-//   des cotes brutes, 1 / (1/cote_a + 1/cote_b), sans marge inventée.
-// - Probabilités normalisées (marge retirée).
+// RÈGLES MAISON v7 — VICTOIRES UNIQUEMENT, choix de Marc (10:32) :
+// jamais de double chance, jamais de nul seul. Le pronostic est toujours
+// la victoire de l'équipe la plus probable (probabilités normalisées,
+// marge retirée), avec la VRAIE cote — donc jamais de « ≈ ».
 // - Garde-fous : cotes absentes/invalides (≤ 1) ou somme des inverses
 //   hors [1 ; 1,3] (cotes incohérentes) → pas de pronostic.
 // - Pronostic marqué « direct » si le match était déjà en cours à la
 //   capture ; quasi acquis si la plus petite cote ≤ 1,05. Les deux sont
 //   exclus du bilan prématch (ils gonfleraient le taux).
 // - AUCUNE explication affichée sur l'interface : ni ligne de règles,
-//   ni ligne de bilan. Le suivi reste enregistré en local, invisible.
+//   ni ligne de bilan. Le bilan est derrière le seul bouton « Bilan ».
 function makePick(m){
   const o = m.odds1x2 || {};
   const vals = [o["1"], o.X, o["2"]].map(Number);
@@ -124,15 +121,10 @@ function makePick(m){
   const s = r[0] + r[1] + r[2];
   if(s < 1 || s > 1.3) return null;
   const p = probs(m); if(!p) return null;
-  const cote2 = (a, b) => Math.max(1.01, +(1 / (r[a] + r[b])).toFixed(2));
   const live = !!m.isLive;
   const quasi = Math.min(...vals) <= 1.05;
-  if(p.p1 >= 0.65) return { code:"1", label:"Victoire " + m.team1, market:"1X2", prob:p.p1, odd:vals[0], live, quasi, estimee:false };
-  if(p.p2 >= 0.65) return { code:"2", label:"Victoire " + m.team2, market:"1X2", prob:p.p2, odd:vals[2], live, quasi, estimee:false };
-  const mn = Math.min(p.p1, p.pX, p.p2);
-  if(mn === p.p2){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:cote2(0, 1), live, quasi, estimee:true }; }
-  if(mn === p.p1){ const pr = p.pX + p.p2; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:cote2(1, 2), live, quasi, estimee:true }; }
-  const pr = p.p1 + p.p2; return { code:"12", label:m.team1 + " ou " + m.team2, market:"Double chance", prob:pr, odd:cote2(0, 2), live, quasi, estimee:true };
+  if(p.p1 >= p.p2) return { code:"1", label:"Victoire " + m.team1, market:"1X2", prob:p.p1, odd:vals[0], live, quasi, estimee:false };
+  return { code:"2", label:"Victoire " + m.team2, market:"1X2", prob:p.p2, odd:vals[2], live, quasi, estimee:false };
 }
 function parseScore(score){
   const r = (score||"").match(/(\d+)\s*[-:]\s*(\d+)/);
@@ -315,13 +307,15 @@ function render(){
     app.innerHTML = html;
   }
   document.getElementById("bilan-bar").style.display = view.type === "bilan" ? "none" : "flex";
-  window.scrollTo(0,0);
+  // PAS de scroll ici : render() tourne toutes les 5 s pour le direct, et
+  // c'est ce scrollTo qui renvoyait l'utilisateur en haut de page.
+  // On ne remonte en haut que lors d'un vrai changement de page.
 }
-function goTo(v){ historyStack.push(view); view = v; render(); }
-function goBack(){ view = historyStack.pop() || { type:"home" }; render(); }
+function goTo(v){ historyStack.push(view); view = v; render(); window.scrollTo(0,0); }
+function goBack(){ view = historyStack.pop() || { type:"home" }; render(); window.scrollTo(0,0); }
 function openLeague(name){ goTo({ type:"league", league:name }); }
 function openMatch(id){ goTo({ type:"match", id:id }); }
-function showHome(){ view = { type:"home" }; historyStack = []; render(); }
+function showHome(){ view = { type:"home" }; historyStack = []; render(); window.scrollTo(0,0); }
 function showBilan(){ goTo({ type:"bilan" }); }
 function showLive(){ goTo({ type:"live" }); }
 async function refresh(){
