@@ -81,7 +81,7 @@
 </div>
 <script>
 const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
-const PICKS_KEY = "jeux-virtuels-picks-v5";
+const PICKS_KEY = "jeux-virtuels-picks-v6";
 let allMatches = [];
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
@@ -96,31 +96,34 @@ function probs(m){
   const s = i1+iX+i2; if(!s) return null;
   return { p1:i1/s, pX:iX/s, p2:i2/s };
 }
-// RÈGLES MAISON v4 — recommandation Claude, objectif : VALIDER LE PLUS.
-// Amélioration par rapport à v3 : la meilleure double chance n'est pas
-// forcément celle du côté favori, c'est celle qui EXCLUT L'ISSUE LA MOINS
-// PROBABLE : proba = 1 - min(p1, pX, p2). D'où le nouveau code "12"
-// (équipe 1 ou équipe 2, sans le nul) quand le nul est le moins probable.
-// - Probabilités normalisées (marge retirée) pour l'affichage.
-// - Cote estimée calculée à partir des cotes BRUTES : 1 / (1/cote_a + 1/cote_b),
-//   sans marge inventée (contrairement au 0,94/proba de v3).
-// - JAMAIS de victoire seule : pour valider le plus, le seuil victoire de
-//   Claude (70 %) est mis à 101 %, donc toujours une double chance.
-// - Cotes incomplètes/invalides → pas de pronostic.
-// Écart assumé par rapport à Claude : garde-fou gardé à cote > 1 (et non
-// > 1,001), car les cotes live à 1,001 sont fréquentes dans ce flux et les
-// exclure laisserait beaucoup de matchs sans pronostic.
+// RÈGLES MAISON v5 — version affinée (2e analyse), objectif : VALIDER LE PLUS.
+// - Double chance qui exclut l'issue la moins probable (1X, 12 ou X2),
+//   jamais le nul seul, jamais de victoire seule (seuil victoire = 1).
+// - Probabilités normalisées (marge retirée).
+// - Cote affichée « ≈ » : estimée à partir des cotes brutes,
+//   1 / (1/cote_a + 1/cote_b), sans marge inventée.
+// - Garde-fous : cotes absentes/invalides (≤ 1) ou somme des inverses
+//   hors [1 ; 1,3] (cotes incohérentes) → pas de pronostic.
+// - Pronostic marqué « direct » si le match était déjà en cours à la
+//   capture ; quasi acquis si la plus petite cote ≤ 1,05. Les deux sont
+//   exclus du bilan prématch (ils gonfleraient le taux).
+// Écart assumé : garde-fou gardé à cote > 1 (et non > 1,001), car les
+// cotes live à 1,001 sont fréquentes dans ce flux.
 function makePick(m){
   const o = m.odds1x2 || {};
   const vals = [o["1"], o.X, o["2"]].map(Number);
   if(!vals.every(v => Number.isFinite(v) && v > 1)) return null;
-  const p = probs(m); if(!p) return null;
   const r = vals.map(v => 1 / v);
+  const s = r[0] + r[1] + r[2];
+  if(s < 1 || s > 1.3) return null;
+  const p = probs(m); if(!p) return null;
   const cote2 = (a, b) => Math.max(1.01, +(1 / (r[a] + r[b])).toFixed(2));
+  const live = !!m.isLive;
+  const quasi = Math.min(...vals) <= 1.05;
   const mn = Math.min(p.p1, p.pX, p.p2);
-  if(mn === p.p2){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:cote2(0, 1) }; }
-  if(mn === p.p1){ const pr = p.pX + p.p2; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:cote2(1, 2) }; }
-  const pr = p.p1 + p.p2; return { code:"12", label:m.team1 + " ou " + m.team2, market:"Double chance", prob:pr, odd:cote2(0, 2) };
+  if(mn === p.p2){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:cote2(0, 1), live, quasi }; }
+  if(mn === p.p1){ const pr = p.pX + p.p2; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:cote2(1, 2), live, quasi }; }
+  const pr = p.p1 + p.p2; return { code:"12", label:m.team1 + " ou " + m.team2, market:"Double chance", prob:pr, odd:cote2(0, 2), live, quasi };
 }
 function parseScore(score){
   const r = (score||"").match(/(\d+)\s*[-:]\s*(\d+)/);
@@ -200,7 +203,7 @@ function matchCard(m, picks){
     center = '<div class="vs">VS</div><div class="time-blue">' + fmtTime(m.start) + '</div><div class="mins">' + minsTo(m.start) + '</div>';
   }
   const o = m.odds1x2 || {};
-  const prono = t ? '<div class="prono"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %</small></div><div class="cote">' + Number(t.pick.odd).toFixed(2) + '</div></div>'
+  const prono = t ? '<div class="prono"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %' + (t.pick.live ? ' · DIRECT' : '') + '</small></div><div class="cote">≈' + Number(t.pick.odd).toFixed(2) + '</div></div>'
     : '<div class="prono"><div class="label">Pronostic indisponible<small>Cotes indisponibles ou incomplètes</small></div><div class="cote">—</div></div>';
   return '<article class="card click" onclick="openMatch(' + m.id + ')">'
     + '<div class="teams">'
@@ -236,8 +239,8 @@ function render(){
     let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span></div>'
       + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
       + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
-      + '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Toujours la double chance qui exclut l’issue la moins probable — la règle qui valide le plus.</p>'
-      + (function(){ let v = 0, e = 0, att = 0; for(const t of Object.values(picks)){ if(t.finished){ if(t.verdict === "valide") v++; else if(t.verdict === "echoue") e++; } else att++; } const tot = v + e; const taux = tot ? Math.round(v / tot * 100) + " %" : "—"; return '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Bilan sur ton téléphone : ' + v + ' validés ✓ · ' + e + ' échoués ✗ · ' + taux + ' · ' + att + ' en attente.</p>'; })()
+      + '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Double chance qui exclut l’issue la moins probable — cote ≈ estimée.</p>'
+      + (function(){ let v = 0, tot = 0, att = 0; for(const t of Object.values(picks)){ if(t.finished){ if(!t.pick.live && !t.pick.quasi){ tot++; if(t.verdict === "valide") v++; } } else att++; } const taux = tot ? Math.round(v / tot * 100) + " %" : "—"; return '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Bilan prématch sur ton téléphone : ' + v + ' validés ✓ / ' + tot + ' jugés · ' + taux + ' · ' + att + ' en attente (directs exclus).</p>'; })()
     {
       html += '<div class="grid2">';
       for(const [name, e] of list){
@@ -286,7 +289,7 @@ function render(){
         + '<div class="pill"><span class="k">V1 · ' + esc(m.team1) + '</span><span class="v">' + fmtOdd(o["1"]) + (p ? ' <small style="color:#00a651">' + Math.round(p.p1*100) + '%</small>' : '') + '</span></div>'
         + '<div class="pill"><span class="k">X · Nul</span><span class="v">' + fmtOdd(o.X) + (p ? ' <small style="color:#00a651">' + Math.round(p.pX*100) + '%</small>' : '') + '</span></div>'
         + '<div class="pill"><span class="k">V2 · ' + esc(m.team2) + '</span><span class="v">' + fmtOdd(o["2"]) + (p ? ' <small style="color:#00a651">' + Math.round(p.p2*100) + '%</small>' : '') + '</span></div></div>'
-        + (t ? '<div class="prono" style="margin-top:14px"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %</small></div><div class="cote">' + Number(t.pick.odd).toFixed(2) + '</div></div><p style="text-align:center;font-weight:800">' + (t.verdict === "valide" ? '<span style="color:#00a651">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#f44336">ÉCHOUÉ ✕</span>' : t.finished ? esc(t.verdict) : 'EN COURS') + '</p>' : '<p class="muted">Pronostic indisponible.</p>')
+        + (t ? '<div class="prono" style="margin-top:14px"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %' + (t.pick.live ? ' · DIRECT' : '') + '</small></div><div class="cote">≈' + Number(t.pick.odd).toFixed(2) + '</div></div><p style="text-align:center;font-weight:800">' + (t.verdict === "valide" ? '<span style="color:#00a651">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#f44336">ÉCHOUÉ ✕</span>' : t.finished ? esc(t.verdict) : 'EN COURS') + '</p>' : '<p class="muted">Pronostic indisponible.</p>')
         + (m.marketCount ? '<div class="foot">+' + m.marketCount + ' paris disponibles</div>' : '') + '</div>';
     }
     app.innerHTML = html;
