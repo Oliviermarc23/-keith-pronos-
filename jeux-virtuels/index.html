@@ -110,7 +110,7 @@
 <div class="bilan-bar" id="bilan-bar"><button onclick="showBilan()">📊 Bilan</button></div>
 <script>
 const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
-const PICKS_KEY = "jeux-virtuels-picks-v9";
+const PICKS_KEY = "jeux-virtuels-picks-v10";
 let allMatches = [];
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
@@ -127,8 +127,9 @@ function probs(m){
   const s = i1+iX+i2; if(!s) return null;
   return { p1:i1/s, pX:iX/s, p2:i2/s };
 }
-// RÈGLES v9 — règle reprise de ce que Marc a demandé à Bolt (31/10) :
-// seuil 45 % + double chance. Si l'équipe la plus probable a au moins
+// RÈGLES v10 — règle propre fixée par Muse à la demande de Marc (31/10,
+// « fais selon toi ce qui peut valider le plus ») : seuil 50 % +
+// double chance. Si l'équipe la plus probable a au moins
 // 45 % de chances de gagner → sa VICTOIRE SIMPLE, avec la VRAIE cote.
 // Sinon → la meilleure DOUBLE CHANCE (« Nul ou [équipe] »), dont la cote
 // est ESTIMÉE à partir des cotes 1X2 (1/(1/oa+1/ob)) : elle s'affiche
@@ -140,13 +141,13 @@ function probs(m){
 //   On n'invente JAMAIS de pronostic quand la source n'a pas de cotes
 //   (certains matchs de simulation), et le « Total pair » est impossible
 //   car la source ne fournit que des cotes 1X2.
-// - Pronostic figé au passage en direct ; marqué « direct » si le match
-//   était déjà en cours à la capture, quasi acquis si la plus petite
-//   cote ≤ 1,05. Le taux du Bilan compte TOUS les pronostics jugés,
-//   comme sur Bolt, mais les directs restent marqués « pris en direct ».
-// - Clé v9 = compteur reparti de zéro avec ces nouvelles règles, comme
-//   Marc l'a demandé à Bolt (réinitialisation), pour ne pas mélanger
-//   les anciennes règles « victoires uniquement » avec les nouvelles.
+// - GEL : dès le premier affichage, le pronostic ne change plus (ni type,
+//   ni cote) ; marqué « direct » si le match était déjà en cours à la
+//   capture, quasi acquis si la plus petite cote ≤ 1,05. Le taux du
+//   Bilan compte TOUS les pronostics jugés, comme sur Bolt, mais les
+//   directs restent marqués « pris en direct ».
+// - Clé v10 = compteur reparti de zéro avec la règle définitive (50 %),
+//   pour ne pas mélanger avec la règle 45 %.
 // - AUCUNE explication affichée sur l'interface : ni ligne de règles,
 //   ni ligne de bilan. Le bilan est derrière le seul bouton « Bilan ».
 function makePick(m, variety){
@@ -170,7 +171,7 @@ function makePick(m, variety){
   if(s < 1 || s > 1.3) return null;
   const p = probs(m); if(!p) return null;
   const quasi = Math.min(...vals) <= 1.05;
-  const SEUIL = 0.45;
+  const SEUIL = 0.50;
   const fav = p.p1 >= p.p2
     ? { code:"1", label:"Victoire " + m.team1, prob:p.p1, odd:vals[0] }
     : { code:"2", label:"Victoire " + m.team2, prob:p.p2, odd:vals[2] };
