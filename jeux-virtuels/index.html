@@ -23,6 +23,18 @@
   .stat-card span{font-size:13px;color:#64748b;font-weight:700}
   .stat-card.ok b{color:#00a651}
   .stat-card.ko b{color:#f44336}
+  .champ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  @media (max-width:480px){.champ-grid{grid-template-columns:repeat(2,1fr)}}
+  .champ-card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:16px 10px 12px;text-align:center;position:relative;transition:transform .15s ease}
+  .champ-card:active{transform:scale(.96)}
+  .champ-card .logo{display:block;margin:0 auto 8px}
+  .champ-card .fallback{margin:0 auto 8px}
+  .champ-card .name{font-weight:800;font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;min-height:2.5em}
+  .champ-card .meta{color:#64748b;font-size:12px}
+  .live-badge{position:absolute;top:8px;right:8px;background:#f44336;color:#fff;font-size:11px;font-weight:800;border-radius:999px;padding:3px 8px;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .anim{animation:fadeUp .4s ease both}
   .wrap{max-width:720px;margin:0 auto;padding:16px}
   h1{font-size:40px;line-height:1;margin:8px 0 6px;letter-spacing:-.5px}
   .sub{color:#64748b;font-size:15px;margin:0 0 18px}
@@ -104,6 +116,7 @@ let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
 let historyStack = [];
 let bilanFilter = "tous"; // tous | valides | echoues (page Bilan / historique)
+let pageAnim = true; // animations d'entrée : seulement lors d'un vrai changement de page, jamais lors du rafraîchissement live (sinon les cartes clignoteraient toutes les 5 s)
 
 function loadPicks(){ try{ return JSON.parse(localStorage.getItem(PICKS_KEY) || "{}"); }catch(e){ return {}; } }
 function savePicks(p){ try{ localStorage.setItem(PICKS_KEY, JSON.stringify(p)); }catch(e){} }
@@ -136,7 +149,7 @@ function probs(m){
 //   les anciennes règles « victoires uniquement » avec les nouvelles.
 // - AUCUNE explication affichée sur l'interface : ni ligne de règles,
 //   ni ligne de bilan. Le bilan est derrière le seul bouton « Bilan ».
-function makePick(m){
+function makePick(m, variety){
   const o = m.odds1x2 || {};
   const live = !!m.isLive;
   const v1 = Number(o["1"]), vX = Number(o.X), v2 = Number(o["2"]);
@@ -157,11 +170,26 @@ function makePick(m){
   if(s < 1 || s > 1.3) return null;
   const p = probs(m); if(!p) return null;
   const quasi = Math.min(...vals) <= 1.05;
-  if(p.p1 >= p.p2 && p.p1 >= 0.45) return { code:"1", label:"Victoire " + m.team1, market:"1X2", prob:p.p1, odd:vals[0], live, quasi, estimee:false };
-  if(p.p2 > p.p1 && p.p2 >= 0.45) return { code:"2", label:"Victoire " + m.team2, market:"1X2", prob:p.p2, odd:vals[2], live, quasi, estimee:false };
+  const SEUIL = 0.45;
+  const fav = p.p1 >= p.p2
+    ? { code:"1", label:"Victoire " + m.team1, prob:p.p1, odd:vals[0] }
+    : { code:"2", label:"Victoire " + m.team2, prob:p.p2, odd:vals[2] };
   const p1x = p.p1 + p.pX, px2 = p.pX + p.p2;
-  if(p1x >= px2) return { code:"1X", label:"Nul ou " + m.team1, market:"Double chance", prob:p1x, odd:1/(1/vals[0] + 1/vals[1]), live, quasi, estimee:true };
-  return { code:"X2", label:"Nul ou " + m.team2, market:"Double chance", prob:px2, odd:1/(1/vals[1] + 1/vals[2]), live, quasi, estimee:true };
+  const dc = p1x >= px2
+    ? { code:"1X", label:"Nul ou " + m.team1, prob:p1x, odd:1/(1/vals[0] + 1/vals[1]) }
+    : { code:"X2", label:"Nul ou " + m.team2, prob:px2, odd:1/(1/vals[1] + 1/vals[2]) };
+  let wantVictory = fav.prob >= SEUIL;
+  // Variété « bipolaire » : quand la favorite est proche du seuil (±5 pts),
+  // victoire et double chance sont toutes les deux défendables ; si un type
+  // domine déjà nettement dans la ligue (écart ≥ 2), on choisit le type
+  // minoritaire pour éviter les alignements. En dehors de la zone, ou sans
+  // domination nette, la règle du seuil s'applique strictement.
+  if(variety && fav.prob >= SEUIL - 0.05 && fav.prob <= SEUIL + 0.05){
+    if(variety.vic - variety.dc >= 2) wantVictory = false;
+    else if(variety.dc - variety.vic >= 2) wantVictory = true;
+  }
+  if(wantVictory) return { code:fav.code, label:fav.label, market:"1X2", prob:fav.prob, odd:fav.odd, live, quasi, estimee:false };
+  return { code:dc.code, label:dc.label, market:"Double chance", prob:dc.prob, odd:dc.odd, live, quasi, estimee:true };
 }
 function parseScore(score){
   const r = (score||"").match(/(\d+)\s*[-:]\s*(\d+)/);
@@ -179,15 +207,19 @@ function updatePicks(matches){
     const k = String(m.id);
     let t = picks[k];
     if(!t){
-      const p = makePick(m);
+      // Variété par ligue : on compte les types déjà suivis dans cette
+      // ligue pour éviter les alignements (voir makePick).
+      const lp = Object.values(picks).filter(x => x.league === m.league);
+      const variety = { vic: lp.filter(x => x.pick.code === "1" || x.pick.code === "2").length, dc: lp.filter(x => x.pick.code === "1X" || x.pick.code === "X2").length };
+      const p = makePick(m, variety);
       if(!p) continue;
       t = { id:m.id, league:m.league, team1:m.team1, team2:m.team2, logo1:m.logo1, logo2:m.logo2, start:m.start, pick:p, seenLive:false, finished:false, verdict:"attente" };
       picks[k] = t;
     }
     const isLive = !!m.isLive;
-    // Règle Claude : avant le coup d'envoi, le pronostic se recalcule à
-    // chaque rafraîchissement ; il est figé dès que le match passe en direct.
-    if(!t.seenLive && !t.finished){ const np = makePick(m); if(np) t.pick = np; }
+    // GEL : dès qu'un pronostic est affiché une première fois, il ne change
+    // plus jamais — ni son type, ni sa cote. Les pastilles V1/X/V2, elles,
+    // continuent de suivre le marché ; seule la bande du pronostic est figée.
     if(isLive){ t.seenLive = true; t.score = m.score; }
     if(!t.finished && t.seenLive && !isLive && m.minute != null && m.minute >= 90 && parseScore(m.score)){
       t.finished = true; t.score = m.score;
@@ -243,7 +275,7 @@ function matchCard(m, picks){
   const o = m.odds1x2 || {};
   const prono = t ? '<div class="prono"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %' + (t.pick.live ? ' · DIRECT' : '') + '</small></div><div class="cote">' + (t.pick.estimee ? '≈' : '') + Number(t.pick.odd).toFixed(2) + '</div></div>'
     : '<div class="prono"><div class="label">Pronostic indisponible<small>Cotes indisponibles ou incomplètes</small></div><div class="cote">—</div></div>';
-  return '<article class="card click" onclick="openMatch(' + m.id + ')">'
+  return '<article class="card click' + (pageAnim ? ' anim' : '') + '" onclick="openMatch(' + m.id + ')">'
     + '<div class="teams">'
     + '<div class="team">' + logoHTML(m.logo1, m.team1) + '<span class="tname">' + esc(m.team1) + '</span></div>'
     + '<div class="center">' + center + '</div>'
@@ -271,20 +303,27 @@ function render(){
       e.n++; if(isLive(m)) e.live++; e.logo = e.logo || m.leagueLogo;
       leagues.set(m.league, e);
     }
-    const list = [...leagues.entries()].sort((a,b) => a[0].localeCompare(b[0]));
+    const list = [...leagues.entries()].sort((a,b) => ((b[1].live > 0) - (a[1].live > 0)) || a[0].localeCompare(b[0]));
     const liveCount = allMatches.filter(isLive).length;
     const upcomingCount = allMatches.filter(m => !isLive(m) && statusOf(m) === "upcoming").length;
     let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span></div>'
       + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
       + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat click" onclick="showLive()"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
     {
-      // Liste plein largeur, comme la capture : logo à gauche, nom, puis
-      // « FIFA · X en direct · Y matchs », chevron à droite.
-      for(const [name, e] of list){
-        html += '<div class="champ" data-league="' + esc(name) + '" onclick="openLeague(this.getAttribute(\'data-league\'))">'
+      // Grille comme la version Bolt actuelle (ce n'est plus linéaire) :
+      // carte par championnat, logo, nom, nombre de matchs, pastille rouge
+      // « X LIVE » quand il y a des directs ; tri directs d'abord.
+      html += '<h3 style="margin:4px 0 2px">Championnats</h3><p class="muted" style="margin:0 0 12px;font-size:13px">FIFA · ' + list.length + '</p>';
+      html += '<div class="champ-grid">';
+      for(let i = 0; i < list.length; i++){
+        const [name, e] = list[i];
+        const anim = pageAnim ? ' anim" style="animation-delay:' + Math.min(i*50, 300) + 'ms' : '';
+        html += '<div class="champ-card click' + anim + '" data-league="' + esc(name) + '" onclick="openLeague(this.getAttribute(\'data-league\'))">'
+          + (e.live > 0 ? '<span class="live-badge">' + e.live + ' LIVE</span>' : '')
           + logoHTML(e.logo, name)
-          + '<span><span class="name">' + esc(name) + '</span><br><span class="meta">FIFA · ' + e.live + ' en direct · ' + e.n + ' matchs</span></span><span class="chev">›</span></div>';
+          + '<span class="name">' + esc(name) + '</span><br><span class="meta">FIFA · ' + e.n + ' matchs</span></div>';
       }
+      html += '</div>';
       if(!list.length) html += '<p class="muted">Aucun match pour le moment.</p>';
     }
     app.innerHTML = html;
@@ -368,6 +407,7 @@ function render(){
     app.innerHTML = html;
   }
   document.getElementById("bilan-bar").style.display = view.type === "bilan" ? "none" : "flex";
+  pageAnim = false; // fin de l'animation d'entrée : les rafraîchissements live suivants ne rejouent rien.
   // PAS de scroll ici : render() tourne toutes les 5 s pour le direct, et
   // c'est ce scrollTo qui renvoyait l'utilisateur en haut de page.
   // On ne remonte en haut que lors d'un vrai changement de page.
@@ -375,15 +415,16 @@ function render(){
 // Retour avec position mémorisée (comme demandé à Bolt) : en quittant
 // une page, on garde sa position de scroll ; en revenant, on la retrouve,
 // même en bas. Seul un vrai changement de page (goTo) remonte en haut.
-function goTo(v){ historyStack.push({ v: view, y: window.scrollY }); view = v; render(); window.scrollTo(0,0); }
+function goTo(v){ historyStack.push({ v: view, y: window.scrollY }); view = v; pageAnim = true; render(); window.scrollTo(0,0); }
 function goBack(){
   const prev = historyStack.pop();
+  pageAnim = true;
   if(prev){ view = prev.v; render(); requestAnimationFrame(() => window.scrollTo(0, prev.y)); }
   else { view = { type:"home" }; render(); window.scrollTo(0,0); }
 }
 function openLeague(name){ goTo({ type:"league", league:name }); }
 function openMatch(id){ goTo({ type:"match", id:id }); }
-function showHome(){ view = { type:"home" }; historyStack = []; render(); window.scrollTo(0,0); }
+function showHome(){ view = { type:"home" }; historyStack = []; pageAnim = true; render(); window.scrollTo(0,0); }
 function showBilan(){ goTo({ type:"bilan" }); }
 function setBilanFilter(f){ bilanFilter = f; render(); }
 function showLive(){ goTo({ type:"live" }); }
