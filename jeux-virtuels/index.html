@@ -81,7 +81,7 @@
 </div>
 <script>
 const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
-const PICKS_KEY = "jeux-virtuels-picks-v1";
+const PICKS_KEY = "jeux-virtuels-picks-v2";
 let allMatches = [];
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
@@ -96,11 +96,18 @@ function probs(m){
   const s = i1+iX+i2; if(!s) return null;
   return { p1:i1/s, pX:iX/s, p2:i2/s };
 }
+// RÈGLES MAISON v1 (nos propres règles, à partir des cotes 1X2 normalisées) :
+// R1 : une équipe à 55 % ou plus → sa victoire.
+// R2 : match serré (nul à 30 % ou plus et aucune équipe au-dessus de 42 %, ou nul le plus probable) → Match nul.
+// R3 : sinon → double chance du côté le plus fort.
 function makePick(m){
   const p = probs(m); if(!p) return null;
   const odd = (prob) => Math.max(1.01, +(0.94/prob).toFixed(2));
-  if(p.p1 >= 0.5) return { code:"1", label:"Victoire " + m.team1, market:"1X2", prob:p.p1, odd:(m.odds1x2 && m.odds1x2["1"]) || odd(p.p1) };
-  if(p.p2 >= 0.5) return { code:"2", label:"Victoire " + m.team2, market:"1X2", prob:p.p2, odd:(m.odds1x2 && m.odds1x2["2"]) || odd(p.p2) };
+  const o = m.odds1x2 || {};
+  const mx = Math.max(p.p1, p.pX, p.p2);
+  if(p.p1 >= 0.55) return { code:"1", label:"Victoire " + m.team1, market:"1X2", prob:p.p1, odd:o["1"] || odd(p.p1) };
+  if(p.p2 >= 0.55) return { code:"2", label:"Victoire " + m.team2, market:"1X2", prob:p.p2, odd:o["2"] || odd(p.p2) };
+  if(p.pX >= mx || (p.pX >= 0.30 && mx <= 0.42)) return { code:"X", label:"Match nul", market:"1X2", prob:p.pX, odd:o.X || odd(p.pX) };
   if(p.p1 + p.pX >= p.p2 + p.pX){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) }; }
   const pr = p.p2 + p.pX; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) };
 }
@@ -215,6 +222,7 @@ function render(){
     let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span></div>'
       + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
       + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
+      + '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Nos règles : favori ≥ 55 % → victoire · match serré → nul · sinon double chance.</p>'
     {
       html += '<div class="grid2">';
       for(const [name, e] of list){
