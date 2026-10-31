@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeux virtuels</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#eef2f7;color:#111827;padding-bottom:90px}
+  .wrap{max-width:720px;margin:0 auto;padding:16px}
+  h1{font-size:40px;line-height:1;margin:8px 0 6px;letter-spacing:-.5px}
+  .sub{color:#64748b;font-size:15px;margin:0 0 18px}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:26px;box-shadow:0 2px 10px rgba(15,23,42,.06);padding:16px;margin-bottom:14px}
+  .champ{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:#fff;border:1px solid #e2e8f0;border-radius:26px;box-shadow:0 2px 10px rgba(15,23,42,.06);padding:16px;margin-bottom:14px;cursor:pointer;font-family:inherit}
+  .champ img,.logo{width:56px;height:56px;border-radius:50%;object-fit:contain;background:#f1f5f9;flex-shrink:0}
+  .fallback{width:56px;height:56px;border-radius:50%;background:#e2e8f0;display:none;place-items:center;font-weight:800;color:#64748b;flex-shrink:0}
+  .champ .name{font-size:20px;font-weight:800;line-height:1.2}
+  .champ .meta{color:#64748b;font-size:14px;margin-top:4px}
+  .chev{margin-left:auto;font-size:26px;color:#111827}
+  .back{position:sticky;top:0;background:#eef2f7;padding:10px 0 12px;z-index:5;display:flex;align-items:center;gap:10px}
+  .back button{border:1px solid #e2e8f0;background:#fff;border-radius:999px;padding:8px 14px;font-size:16px;font-weight:700;cursor:pointer}
+  .league-head{display:flex;align-items:center;gap:12px;margin:4px 0 4px}
+  .league-head .lname{font-size:28px;font-weight:900;line-height:1.1}
+  .date{color:#64748b;font-size:15px;margin:0 0 16px}
+  .teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+  .team{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+  .team .tname{font-weight:700;font-size:15px;line-height:1.2}
+  .center{text-align:center;min-width:110px}
+  .score{font-size:38px;font-weight:900;line-height:1;display:flex;align-items:center;justify-content:center;gap:8px}
+  .verdict{width:36px;height:36px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:20px;font-weight:900;flex-shrink:0}
+  .verdict.ok{background:#22c55e}.verdict.ko{background:#ef4444}
+  .live{color:#ef4444;font-weight:800;font-size:14px}
+  .mins{color:#64748b;font-size:14px;margin-top:4px}
+  .vs{font-size:36px;font-weight:900}
+  .time-blue{color:#2563eb;font-weight:800;font-size:17px}
+  .odds{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+  .pill{background:#eef2f7;border-radius:16px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+  .pill .k{color:#64748b;font-size:13px;font-weight:700}
+  .pill .v{font-weight:800;font-size:16px}
+  .prono{margin-top:12px;border-radius:14px;overflow:hidden;display:flex}
+  .prono .label{flex:1;background:#fbbf24;padding:12px 14px;font-weight:800;font-size:15px}
+  .prono .cote{background:#22c55e;color:#fff;padding:12px 16px;font-weight:900;font-size:17px;min-width:86px;text-align:center}
+  .prono small{display:block;font-weight:600;font-size:12px;opacity:.85}
+  .foot{color:#64748b;font-size:13px;text-align:center;margin-top:10px}
+  .nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e2e8f0;display:flex;z-index:10}
+  .nav button{flex:1;border:0;background:#fff;padding:12px 0 14px;font-size:15px;font-weight:700;color:#475569;cursor:pointer}
+  .nav button.active{background:#dbeafe;color:#2563eb}
+  .nav button span{display:block;font-size:22px}
+  .err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:14px;padding:12px;margin-bottom:14px}
+  .muted{color:#64748b}
+  .detail-score{font-size:56px;font-weight:900}
+  .badge{display:inline-block;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800}
+  .badge.live{background:#fee2e2;color:#dc2626}
+  .badge.up{background:#dbeafe;color:#2563eb}
+  .badge.done{background:#e2e8f0;color:#475569}
+  .click{cursor:pointer}
+  .topbar{display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid #e2e8f0;padding:12px 16px;margin:-16px -16px 16px;position:sticky;top:0;z-index:6}
+  .topbar .brand-logo{width:44px;height:44px;border-radius:50%;background:#f97316;display:grid;place-items:center;color:#fff;font-size:22px;flex-shrink:0}
+  .topbar .brand{font-size:21px;font-weight:900;letter-spacing:-.3px}
+  .topbar .refresh{margin-left:auto;background:#f1f5f9;border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
+  .topbar .refresh i{width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block}
+  .hero{background:linear-gradient(135deg,#f97316,#fb923c);border-radius:28px;padding:24px;color:#fff;margin-bottom:16px}
+  .hero .kicker{font-size:14px;letter-spacing:3px;font-weight:700;opacity:.9}
+  .hero .big{font-size:42px;line-height:1.05;font-weight:900;margin:6px 0 18px;letter-spacing:-.5px}
+  .hero .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .hero .stat{background:rgba(255,255,255,.22);border-radius:18px;padding:14px 8px;text-align:center}
+  .hero .stat b{display:block;font-size:28px}
+  .hero .stat span{font-size:11px;letter-spacing:1px;opacity:.9}
+  .tabs{display:flex;background:#eef2f7;border-radius:999px;padding:4px;margin-bottom:16px}
+  .tabs button{flex:1;border:0;background:transparent;border-radius:999px;padding:10px 6px;font-size:14px;font-weight:700;color:#475569;cursor:pointer}
+  .tabs button.active{background:#111827;color:#fff}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .league-card{position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:24px;padding:18px 10px 16px;text-align:center;cursor:pointer}
+  .league-card .live-badge{position:absolute;top:10px;right:10px;background:#ef4444;color:#fff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}
+  .league-card img,.league-card .logo{width:64px;height:64px;margin:6px auto 10px}
+  .league-card .fallback{width:64px;height:64px;margin:6px auto 10px}
+  .league-card .lname{font-weight:800;font-size:16px;line-height:1.25}
+  .league-card .meta{color:#64748b;font-size:13px;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="app"><p class="muted">Chargement des matchs…</p></div>
+  <p id="updated" class="muted" style="text-align:center;font-size:13px"></p>
+</div>
+<nav class="nav">
+  <button id="nav-home" class="active" onclick="showHome()"><span>🏆</span>Sports</button>
+  <button id="nav-live" onclick="showLive()"><span>📡</span>En direct</button>
+</nav>
+<script>
+const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
+const PICKS_KEY = "jeux-virtuels-picks-v1";
+let allMatches = [];
+let homeTab = "ligues"; // ligues | live | upcoming
+let lastRefresh = Date.now();
+let view = { type: "home" }; // home | league | match | live
+let historyStack = [];
+
+function loadPicks(){ try{ return JSON.parse(localStorage.getItem(PICKS_KEY) || "{}"); }catch(e){ return {}; } }
+function savePicks(p){ try{ localStorage.setItem(PICKS_KEY, JSON.stringify(p)); }catch(e){} }
+
+function probs(m){
+  const o = m.odds1x2 || {};
+  const i1 = o["1"] ? 1/o["1"] : 0, iX = o.X ? 1/o.X : 0, i2 = o["2"] ? 1/o["2"] : 0;
+  const s = i1+iX+i2; if(!s) return null;
+  return { p1:i1/s, pX:iX/s, p2:i2/s };
+}
+function makePick(m){
+  const p = probs(m); if(!p) return null;
+  const odd = (prob) => Math.max(1.01, +(0.94/prob).toFixed(2));
+  if(p.p1 >= 0.5) return { code:"1", label:"Victoire " + m.team1, market:"1X2", prob:p.p1, odd:(m.odds1x2 && m.odds1x2["1"]) || odd(p.p1) };
+  if(p.p2 >= 0.5) return { code:"2", label:"Victoire " + m.team2, market:"1X2", prob:p.p2, odd:(m.odds1x2 && m.odds1x2["2"]) || odd(p.p2) };
+  if(p.p1 + p.pX >= p.p2 + p.pX){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) }; }
+  const pr = p.p2 + p.pX; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) };
+}
+function parseScore(score){
+  const r = (score||"").match(/(\d+)\s*[-:]\s*(\d+)/);
+  return r ? [Number(r[1]), Number(r[2])] : null;
+}
+function pickWins(code, a, b){
+  const res = a > b ? "1" : a < b ? "2" : "X";
+  return code === res || (code === "1X" && res !== "2") || (code === "X2" && res !== "1");
+}
+// Pronostic figé à la première apparition du match, verdict quand il quitte le flux (ou à 90' non live).
+function updatePicks(matches){
+  const picks = loadPicks();
+  const ids = new Set(matches.map(m => String(m.id)));
+  for(const m of matches){
+    const k = String(m.id);
+    let t = picks[k];
+    if(!t){
+      const p = makePick(m);
+      if(!p) continue;
+      t = { id:m.id, league:m.league, team1:m.team1, team2:m.team2, start:m.start, pick:p, seenLive:false, finished:false, verdict:"attente" };
+      picks[k] = t;
+    }
+    const isLive = !!m.isLive;
+    if(isLive){ t.seenLive = true; t.score = m.score; }
+    if(!t.finished && t.seenLive && !isLive && m.minute != null && m.minute >= 90 && parseScore(m.score)){
+      t.finished = true; t.score = m.score;
+      const s = parseScore(m.score);
+      t.verdict = pickWins(t.pick.code, s[0], s[1]) ? "valide" : "echoue";
+    }
+  }
+  for(const k of Object.keys(picks)){
+    const t = picks[k];
+    if(!ids.has(k) && t.seenLive && !t.finished && t.score){
+      t.finished = true;
+      const s = parseScore(t.score);
+      t.verdict = s && pickWins(t.pick.code, s[0], s[1]) ? "valide" : "echoue";
+    }
+  }
+  const list = Object.values(picks).sort((a,b) => b.start - a.start).slice(0, 300);
+  const next = {}; list.forEach(t => next[String(t.id)] = t);
+  savePicks(next);
+  return next;
+}
+function esc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function logoHTML(src, name){
+  if(!src) return '<span class="fallback" style="display:grid">' + esc((name||"?").slice(0,1)) + '</span>';
+  return '<img class="logo" src="' + esc(src) + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'"><span class="fallback">' + esc((name||"?").slice(0,1)) + '</span>';
+}
+function fmtTime(start){ return new Date(start*1000).toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"}); }
+function minsTo(start){
+  const d = Math.max(0, Math.round((start - Date.now()/1000)/60));
+  return d === 0 ? "Imminent" : "Début dans " + d + " minutes";
+}
+function fmtOdd(v){ return (v == null || v === "") ? "—" : Number(v).toFixed(2).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1"); }
+function isLive(m){ return !!m.isLive; }
+function statusOf(m){
+  if(isLive(m)) return "live";
+  if(m.minute != null && m.minute >= 90) return "done";
+  if(Date.now()/1000 > m.start + 7200 && !isLive(m) && m.score && m.score !== "0 - 0") return "done";
+  return "upcoming";
+}
+function matchCard(m, picks){
+  const t = picks[String(m.id)];
+  const st = statusOf(m);
+  const s = parseScore(m.score);
+  let center = "";
+  if(st === "live"){
+    center = '<div class="score">' + esc(s ? s[0] : 0) + ' - ' + esc(s ? s[1] : 0) + '</div><div class="live">LIVE</div><div class="mins">' + (m.minute != null ? m.minute + " minutes" : "") + '</div>';
+  } else if(st === "done"){
+    let v = "";
+    if(t && t.finished){ v = t.verdict === "valide" ? '<span class="verdict ok">✓</span>' : '<span class="verdict ko">✕</span>'; }
+    center = '<div class="score">' + esc(s ? s[0] : 0) + ' ' + v + ' ' + esc(s ? s[1] : 0) + '</div><div class="mins">Terminé</div>';
+  } else {
+    center = '<div class="vs">VS</div><div class="time-blue">' + fmtTime(m.start) + '</div><div class="mins">' + minsTo(m.start) + '</div>';
+  }
+  const o = m.odds1x2 || {};
+  const prono = t ? '<div class="prono"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %</small></div><div class="cote">' + Number(t.pick.odd).toFixed(2) + '</div></div>'
+    : '<div class="prono"><div class="label">Pronostic indisponible<small>Match déjà terminé à l\'ouverture</small></div><div class="cote">—</div></div>';
+  return '<article class="card click" onclick="openMatch(' + m.id + ')">'
+    + '<div class="teams">'
+    + '<div class="team">' + logoHTML(m.logo1, m.team1) + '<span class="tname">' + esc(m.team1) + '</span></div>'
+    + '<div class="center">' + center + '</div>'
+    + '<div class="team">' + logoHTML(m.logo2, m.team2) + '<span class="tname">' + esc(m.team2) + '</span></div>'
+    + '</div>'
+    + '<div class="odds">'
+    + '<div class="pill"><span class="k">V1</span><span class="v">' + fmtOdd(o["1"]) + '</span></div>'
+    + '<div class="pill"><span class="k">X</span><span class="v">' + fmtOdd(o.X) + '</span></div>'
+    + '<div class="pill"><span class="k">V2</span><span class="v">' + fmtOdd(o["2"]) + '</span></div>'
+    + '</div>'
+    + prono
+    + (m.marketCount ? '<div class="foot">+' + m.marketCount + ' paris disponibles</div>' : '')
+    + '</article>';
+}
+function backBar(){
+  return '<div class="back"><button onclick="goBack()">← Back</button></div>';
+}
+function render(){
+  const app = document.getElementById("app");
+  const picks = loadPicks();
+  document.getElementById("nav-home").className = view.type === "home" || view.type === "league" || view.type === "match" ? "active" : "";
+  document.getElementById("nav-live").className = view.type === "live" ? "active" : "";
+  if(view.type === "home"){
+    const leagues = new Map();
+    for(const m of allMatches){
+      const e = leagues.get(m.league) || { logo:m.leagueLogo, n:0, live:0 };
+      e.n++; if(isLive(m)) e.live++; e.logo = e.logo || m.leagueLogo;
+      leagues.set(m.league, e);
+    }
+    const list = [...leagues.entries()].sort((a,b) => a[0].localeCompare(b[0]));
+    const liveCount = allMatches.filter(isLive).length;
+    const upcomingCount = allMatches.filter(m => !isLive(m) && statusOf(m) === "upcoming").length;
+    let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span><span class="refresh"><i></i><span id="refresh-secs">0s</span></span></div>'
+      + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
+      + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
+      + '<div class="tabs">'
+      + '<button class="' + (homeTab === "ligues" ? "active" : "") + '" onclick="setTab(\'ligues\')">🏆 Ligues ' + list.length + '</button>'
+      + '<button class="' + (homeTab === "live" ? "active" : "") + '" onclick="setTab(\'live\')">📡 Direct ' + liveCount + '</button>'
+      + '<button class="' + (homeTab === "upcoming" ? "active" : "") + '" onclick="setTab(\'upcoming\')">🕐 À venir ' + upcomingCount + '</button>'
+      + '</div>';
+    if(homeTab === "ligues"){
+      html += '<div class="grid2">';
+      for(const [name, e] of list){
+        html += '<div class="league-card" onclick="openLeague(' + JSON.stringify(name) + ')">'
+          + (e.live ? '<span class="live-badge">● ' + e.live + '</span>' : '')
+          + logoHTML(e.logo, name)
+          + '<div class="lname">' + esc(name) + '</div><div class="meta">' + e.n + ' matchs</div></div>';
+      }
+      html += '</div>';
+      if(!list.length) html += '<p class="muted">Aucun match pour le moment.</p>';
+    } else if(homeTab === "live"){
+      const live = allMatches.filter(isLive).sort((a,b) => a.league.localeCompare(b.league) || a.start - b.start);
+      for(const m of live) html += matchCard(m, picks);
+      if(!live.length) html += '<p class="muted">Aucun match en direct pour le moment.</p>';
+    } else {
+      const up = allMatches.filter(m => !isLive(m) && statusOf(m) === "upcoming").sort((a,b) => a.start - b.start);
+      for(const m of up) html += matchCard(m, picks);
+      if(!up.length) html += '<p class="muted">Aucun match à venir pour le moment.</p>';
+    }
+    app.innerHTML = html;
+  } else if(view.type === "league"){
+    const list = allMatches.filter(m => m.league === view.league)
+      .sort((a,b) => (isLive(b)-isLive(a)) || a.start - b.start);
+    const e = list[0];
+    const today = new Date().toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+    let html = backBar()
+      + '<div class="league-head">' + logoHTML(e ? e.leagueLogo : null, view.league) + '<span class="lname">' + esc(view.league) + '</span></div>'
+      + '<p class="date">' + today + ' · ' + list.length + ' matchs</p>';
+    for(const m of list) html += matchCard(m, picks);
+    if(!list.length) html += '<p class="muted">Aucun match pour le moment.</p>';
+    app.innerHTML = html;
+  } else if(view.type === "live"){
+    const list = allMatches.filter(isLive).sort((a,b) => a.league.localeCompare(b.league) || a.start - b.start);
+    let html = backBar() + '<h1 style="font-size:30px">En direct</h1><p class="sub">' + list.length + ' matchs en direct</p>';
+    for(const m of list) html += matchCard(m, picks);
+    if(!list.length) html += '<p class="muted">Aucun match en direct pour le moment.</p>';
+    app.innerHTML = html;
+  } else if(view.type === "match"){
+    const m = allMatches.find(x => String(x.id) === String(view.id));
+    const t = picks[String(view.id)];
+    let html = backBar();
+    if(!m && t){
+      html += '<div class="card"><p><b>' + esc(t.team1) + ' – ' + esc(t.team2) + '</b></p><p class="muted">Match terminé · score final ' + esc(t.score || "–") + '</p><p><b>' + esc(t.pick.label) + '</b> — ' + (t.verdict === "valide" ? '<span style="color:#16a34a;font-weight:800">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#dc2626;font-weight:800">ÉCHOUÉ ✕</span>' : esc(t.verdict)) + '</p></div>';
+    } else if(!m){
+      html += '<p class="muted">Ce match n\'est plus disponible.</p>';
+    } else {
+      const st = statusOf(m); const s = parseScore(m.score); const p = probs(m); const o = m.odds1x2 || {};
+      const badge = st === "live" ? '<span class="badge live">● LIVE · ' + (m.minute != null ? m.minute + "'" : "") + '</span>' : st === "done" ? '<span class="badge done">Terminé</span>' : '<span class="badge up">Coup d\'envoi ' + fmtTime(m.start) + '</span>';
+      html += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><span class="muted" style="font-size:14px">' + esc(m.league) + '</span>' + badge + '</div>'
+        + '<div class="teams" style="margin-top:16px"><div class="team">' + logoHTML(m.logo1, m.team1) + '<span class="tname">' + esc(m.team1) + '</span></div>'
+        + '<div class="center"><div class="detail-score">' + (st === "upcoming" ? "VS" : esc(s ? s[0] : 0) + " - " + esc(s ? s[1] : 0)) + '</div><div class="mins">' + (st === "live" ? (m.minute + " minutes") : st === "done" ? "Terminé" : fmtTime(m.start) + " · " + minsTo(m.start)) + '</div></div>'
+        + '<div class="team">' + logoHTML(m.logo2, m.team2) + '<span class="tname">' + esc(m.team2) + '</span></div></div></div>';
+      html += '<div class="card"><h3 style="margin:0 0 10px">Cotes 1X2</h3><div class="odds" style="margin-top:0">'
+        + '<div class="pill"><span class="k">V1 · ' + esc(m.team1) + '</span><span class="v">' + fmtOdd(o["1"]) + (p ? ' <small style="color:#16a34a">' + Math.round(p.p1*100) + '%</small>' : '') + '</span></div>'
+        + '<div class="pill"><span class="k">X · Nul</span><span class="v">' + fmtOdd(o.X) + (p ? ' <small style="color:#16a34a">' + Math.round(p.pX*100) + '%</small>' : '') + '</span></div>'
+        + '<div class="pill"><span class="k">V2 · ' + esc(m.team2) + '</span><span class="v">' + fmtOdd(o["2"]) + (p ? ' <small style="color:#16a34a">' + Math.round(p.p2*100) + '%</small>' : '') + '</span></div></div>'
+        + (t ? '<div class="prono" style="margin-top:14px"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %</small></div><div class="cote">' + Number(t.pick.odd).toFixed(2) + '</div></div><p style="text-align:center;font-weight:800">' + (t.verdict === "valide" ? '<span style="color:#16a34a">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#dc2626">ÉCHOUÉ ✕</span>' : t.finished ? esc(t.verdict) : 'EN COURS') + '</p>' : '<p class="muted">Pronostic indisponible.</p>')
+        + (m.marketCount ? '<div class="foot">+' + m.marketCount + ' paris disponibles</div>' : '') + '</div>';
+    }
+    app.innerHTML = html;
+  }
+  window.scrollTo(0,0);
+}
+function goTo(v){ historyStack.push(view); view = v; render(); }
+function goBack(){ view = historyStack.pop() || { type:"home" }; render(); }
+function openLeague(name){ goTo({ type:"league", league:name }); }
+function openMatch(id){ goTo({ type:"match", id:id }); }
+function setTab(t){ homeTab = t; render(); }
+function showHome(){ view = { type:"home" }; historyStack = []; render(); }
+function showLive(){ goTo({ type:"live" }); }
+async function refresh(){
+  try{
+    const res = await fetch(API);
+    const data = await res.json();
+    if(data && Array.isArray(data.matches)){
+      allMatches = data.matches;
+      lastRefresh = Date.now();
+      updatePicks(allMatches);
+      document.getElementById("updated").textContent = "Actualisé à " + new Date().toLocaleTimeString("fr-FR") + (data.error ? " · erreur API : " + data.error : "");
+      render();
+    }
+  }catch(e){
+    document.getElementById("app").innerHTML = '<div class="err">Impossible de charger les matchs. Vérifie ta connexion, la page réessaiera dans 5 secondes.</div>';
+  }
+}
+refresh();
+setInterval(refresh, 5000);
+setInterval(() => { const el = document.getElementById("refresh-secs"); if(el) el.textContent = Math.floor((Date.now() - lastRefresh)/1000) + "s"; }, 1000);
+</script>
+</body>
+</html>
