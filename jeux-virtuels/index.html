@@ -224,7 +224,7 @@ function render(){
     if(homeTab === "ligues"){
       html += '<div class="grid2">';
       for(const [name, e] of list){
-        html += '<div class="league-card" onclick="openLeague(' + JSON.stringify(name) + ')">'
+        html += '<div class="league-card" data-league="' + esc(name) + '" onclick="openLeague(this.getAttribute(\'data-league\'))">'
           + (e.live ? '<span class="live-badge">● ' + e.live + '</span>' : '')
           + logoHTML(e.logo, name)
           + '<div class="lname">' + esc(name) + '</div><div class="meta">' + e.n + ' matchs</div></div>';
