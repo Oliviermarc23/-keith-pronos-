@@ -12,6 +12,11 @@
   .bilan-big{font-size:52px;font-weight:900;text-align:center;margin:8px 0 4px}
   .bilan-row{display:flex;justify-content:space-between;background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px 16px;margin-bottom:10px;font-size:16px}
   .bilan-row b{font-size:17px}
+  .hist-row{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:12px 14px;margin-bottom:8px}
+  .hist-row .h-top{font-weight:700;font-size:15px}
+  .hist-row .h-sub{color:#64748b;font-size:13px;margin-top:4px}
+  .hist-row .ok{color:#00a651;font-weight:800}
+  .hist-row .ko{color:#f44336;font-weight:800}
   .wrap{max-width:720px;margin:0 auto;padding:16px}
   h1{font-size:40px;line-height:1;margin:8px 0 6px;letter-spacing:-.5px}
   .sub{color:#64748b;font-size:15px;margin:0 0 18px}
@@ -92,6 +97,7 @@ let allMatches = [];
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
 let historyStack = [];
+let bilanFilter = "tous"; // tous | valides | echoues (page Bilan / historique)
 
 function loadPicks(){ try{ return JSON.parse(localStorage.getItem(PICKS_KEY) || "{}"); }catch(e){ return {}; } }
 function savePicks(p){ try{ localStorage.setItem(PICKS_KEY, JSON.stringify(p)); }catch(e){} }
@@ -239,7 +245,7 @@ function render(){
     const upcomingCount = allMatches.filter(m => !isLive(m) && statusOf(m) === "upcoming").length;
     let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span></div>'
       + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
-      + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
+      + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat click" onclick="showLive()"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
     {
       // Liste plein largeur, comme la capture : logo à gauche, nom, puis
       // « FIFA · X en direct · Y matchs », chevron à droite.
@@ -300,10 +306,24 @@ function render(){
       } else att++;
     }
     const taux = tot ? Math.round(v / tot * 100) + " %" : "—";
+    // Historique (comme la page Statistiques de Bolt, mais avec nos règles) :
+    // tous les pronostics suivis, triés du plus récent au plus ancien.
+    const all = Object.values(picks).sort((a,b) => b.start - a.start);
+    const shown = all.filter(t => bilanFilter === "tous" || (bilanFilter === "valides" && t.finished && t.verdict === "valide") || (bilanFilter === "echoues" && t.finished && t.verdict === "echoue"));
+    let hist = "";
+    for(const t of shown){
+      const d = new Date(t.start*1000).toLocaleDateString("fr-FR", { day:"numeric", month:"short" }) + " · " + new Date(t.start*1000).toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" });
+      const badge = !t.finished ? '<span class="muted">EN COURS</span>' : t.verdict === "valide" ? '<span class="ok">VALIDÉ ✓</span>' : '<span class="ko">ÉCHOUÉ ✕</span>';
+      hist += '<div class="hist-row"><div class="h-top">' + esc(t.team1) + ' – ' + esc(t.team2) + '</div><div class="h-sub">' + esc(t.pick.label) + (t.finished && t.score ? ' · score ' + esc(t.score) : '') + ' · ' + d + (t.pick.live ? ' · pris en direct' : '') + '</div><div style="margin-top:6px">' + badge + '</div></div>';
+    }
+    if(!shown.length) hist = '<p class="muted">Aucun pronostic dans ce filtre pour le moment.</p>';
     html = backBar() + '<div style="background:#ff7a00;border-radius:20px;padding:20px 16px;color:#fff;text-align:center;margin-bottom:16px"><div style="font-size:20px;font-weight:900">BILAN</div><div class="bilan-big">' + v + ' / ' + tot + '</div><div style="font-size:16px">pronostics validés sur jugés · ' + taux + '</div></div>'
       + '<div class="bilan-row"><span>En attente</span><b>' + att + '</b></div>'
-      + '<div class="bilan-row"><span>Directs exclus</span><b>' + dir + '</b></div>'
-      + '<p class="muted" style="text-align:center;font-size:13px">Compteur de ton téléphone. Les pronostics directs ne comptent pas.</p>';
+      + '<div class="bilan-row"><span>Directs exclus du taux</span><b>' + dir + '</b></div>'
+      + '<p class="muted" style="text-align:center;font-size:13px">Compteur de ton téléphone. Seuls les pronostics prématch comptent dans le taux ; les directs sont marqués « pris en direct » dans l\'historique.</p>'
+      + '<h3 style="margin:16px 0 10px">Historique</h3>'
+      + '<div class="tabs"><button class="' + (bilanFilter === "tous" ? "active" : "") + '" onclick="setBilanFilter(\'tous\')">Tous</button><button class="' + (bilanFilter === "valides" ? "active" : "") + '" onclick="setBilanFilter(\'valides\')">Validés</button><button class="' + (bilanFilter === "echoues" ? "active" : "") + '" onclick="setBilanFilter(\'echoues\')">Échoués</button></div>'
+      + hist;
     app.innerHTML = html;
   }
   document.getElementById("bilan-bar").style.display = view.type === "bilan" ? "none" : "flex";
@@ -317,6 +337,7 @@ function openLeague(name){ goTo({ type:"league", league:name }); }
 function openMatch(id){ goTo({ type:"match", id:id }); }
 function showHome(){ view = { type:"home" }; historyStack = []; render(); window.scrollTo(0,0); }
 function showBilan(){ goTo({ type:"bilan" }); }
+function setBilanFilter(f){ bilanFilter = f; render(); }
 function showLive(){ goTo({ type:"live" }); }
 async function refresh(){
   try{
