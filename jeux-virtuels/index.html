@@ -83,7 +83,6 @@
 const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
 const PICKS_KEY = "jeux-virtuels-picks-v1";
 let allMatches = [];
-let homeTab = "ligues"; // ligues | live | upcoming
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
 let historyStack = [];
@@ -213,15 +212,10 @@ function render(){
     const list = [...leagues.entries()].sort((a,b) => a[0].localeCompare(b[0]));
     const liveCount = allMatches.filter(isLive).length;
     const upcomingCount = allMatches.filter(m => !isLive(m) && statusOf(m) === "upcoming").length;
-    let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span><span class="refresh"><i></i><span id="refresh-secs">0s</span></span></div>'
+    let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span></div>'
       + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
       + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
-      + '<div class="tabs">'
-      + '<button class="' + (homeTab === "ligues" ? "active" : "") + '" onclick="setTab(\'ligues\')">🏆 Ligues ' + list.length + '</button>'
-      + '<button class="' + (homeTab === "live" ? "active" : "") + '" onclick="setTab(\'live\')">📡 Direct ' + liveCount + '</button>'
-      + '<button class="' + (homeTab === "upcoming" ? "active" : "") + '" onclick="setTab(\'upcoming\')">🕐 À venir ' + upcomingCount + '</button>'
-      + '</div>';
-    if(homeTab === "ligues"){
+    {
       html += '<div class="grid2">';
       for(const [name, e] of list){
         html += '<div class="league-card" data-league="' + esc(name) + '" onclick="openLeague(this.getAttribute(\'data-league\'))">'
@@ -231,14 +225,6 @@ function render(){
       }
       html += '</div>';
       if(!list.length) html += '<p class="muted">Aucun match pour le moment.</p>';
-    } else if(homeTab === "live"){
-      const live = allMatches.filter(isLive).sort((a,b) => a.league.localeCompare(b.league) || a.start - b.start);
-      for(const m of live) html += matchCard(m, picks);
-      if(!live.length) html += '<p class="muted">Aucun match en direct pour le moment.</p>';
-    } else {
-      const up = allMatches.filter(m => !isLive(m) && statusOf(m) === "upcoming").sort((a,b) => a.start - b.start);
-      for(const m of up) html += matchCard(m, picks);
-      if(!up.length) html += '<p class="muted">Aucun match à venir pour le moment.</p>';
     }
     app.innerHTML = html;
   } else if(view.type === "league"){
@@ -288,7 +274,6 @@ function goTo(v){ historyStack.push(view); view = v; render(); }
 function goBack(){ view = historyStack.pop() || { type:"home" }; render(); }
 function openLeague(name){ goTo({ type:"league", league:name }); }
 function openMatch(id){ goTo({ type:"match", id:id }); }
-function setTab(t){ homeTab = t; render(); }
 function showHome(){ view = { type:"home" }; historyStack = []; render(); }
 function showLive(){ goTo({ type:"live" }); }
 async function refresh(){
@@ -308,7 +293,6 @@ async function refresh(){
 }
 refresh();
 setInterval(refresh, 5000);
-setInterval(() => { const el = document.getElementById("refresh-secs"); if(el) el.textContent = Math.floor((Date.now() - lastRefresh)/1000) + "s"; }, 1000);
 </script>
 </body>
 </html>
