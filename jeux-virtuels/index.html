@@ -28,8 +28,8 @@
   .center{text-align:center;min-width:110px}
   .score{font-size:38px;font-weight:900;line-height:1;display:flex;align-items:center;justify-content:center;gap:8px}
   .verdict{width:36px;height:36px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:20px;font-weight:900;flex-shrink:0}
-  .verdict.ok{background:#22c55e}.verdict.ko{background:#ef4444}
-  .live{color:#ef4444;font-weight:800;font-size:14px}
+  .verdict.ok{background:#00c853}.verdict.ko{background:#f44336}
+  .live{color:#f44336;font-weight:800;font-size:14px}
   .mins{color:#64748b;font-size:14px;margin-top:4px}
   .vs{font-size:36px;font-weight:900}
   .time-blue{color:#2563eb;font-weight:800;font-size:17px}
@@ -38,24 +38,24 @@
   .pill .k{color:#64748b;font-size:13px;font-weight:700}
   .pill .v{font-weight:800;font-size:16px}
   .prono{margin-top:12px;border-radius:14px;overflow:hidden;display:flex}
-  .prono .label{flex:1;background:#fbbf24;padding:12px 14px;font-weight:800;font-size:15px}
-  .prono .cote{background:#22c55e;color:#fff;padding:12px 16px;font-weight:900;font-size:17px;min-width:86px;text-align:center}
+  .prono .label{flex:1;background:#ffa500;padding:12px 14px;font-weight:800;font-size:15px}
+  .prono .cote{background:#00c853;color:#000;padding:12px 16px;font-weight:900;font-size:17px;min-width:86px;text-align:center}
   .prono small{display:block;font-weight:600;font-size:12px;opacity:.85}
   .foot{color:#64748b;font-size:13px;text-align:center;margin-top:10px}
   .err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:14px;padding:12px;margin-bottom:14px}
   .muted{color:#64748b}
   .detail-score{font-size:56px;font-weight:900}
   .badge{display:inline-block;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800}
-  .badge.live{background:#fee2e2;color:#dc2626}
+  .badge.live{background:#fee2e2;color:#f44336}
   .badge.up{background:#dbeafe;color:#2563eb}
   .badge.done{background:#e2e8f0;color:#475569}
   .click{cursor:pointer}
   .topbar{display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid #e2e8f0;padding:12px 16px;margin:-16px -16px 16px;position:sticky;top:0;z-index:6}
-  .topbar .brand-logo{width:44px;height:44px;border-radius:50%;background:#f97316;display:grid;place-items:center;color:#fff;font-size:22px;flex-shrink:0}
+  .topbar .brand-logo{width:44px;height:44px;border-radius:50%;background:#ff7a00;display:grid;place-items:center;color:#fff;font-size:22px;flex-shrink:0}
   .topbar .brand{font-size:21px;font-weight:900;letter-spacing:-.3px}
   .topbar .refresh{margin-left:auto;background:#f1f5f9;border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
   .topbar .refresh i{width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block}
-  .hero{background:linear-gradient(135deg,#f97316,#fb923c);border-radius:28px;padding:24px;color:#fff;margin-bottom:16px}
+  .hero{background:#ff7a00;border-radius:28px;padding:24px;color:#fff;margin-bottom:16px}
   .hero .kicker{font-size:14px;letter-spacing:3px;font-weight:700;opacity:.9}
   .hero .big{font-size:42px;line-height:1.05;font-weight:900;margin:6px 0 18px;letter-spacing:-.5px}
   .hero .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
@@ -67,7 +67,7 @@
   .tabs button.active{background:#111827;color:#fff}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .league-card{position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:24px;padding:18px 10px 16px;text-align:center;cursor:pointer}
-  .league-card .live-badge{position:absolute;top:10px;right:10px;background:#ef4444;color:#fff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}
+  .league-card .live-badge{position:absolute;top:10px;right:10px;background:#f44336;color:#fff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}
   .league-card img,.league-card .logo{width:64px;height:64px;margin:6px auto 10px}
   .league-card .fallback{width:64px;height:64px;margin:6px auto 10px}
   .league-card .lname{font-weight:800;font-size:16px;line-height:1.25}
@@ -263,7 +263,7 @@ function render(){
     const t = picks[String(view.id)];
     let html = backBar();
     if(!m && t){
-      html += '<div class="card"><p><b>' + esc(t.team1) + ' – ' + esc(t.team2) + '</b></p><p class="muted">Match terminé · score final ' + esc(t.score || "–") + '</p><p><b>' + esc(t.pick.label) + '</b> — ' + (t.verdict === "valide" ? '<span style="color:#16a34a;font-weight:800">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#dc2626;font-weight:800">ÉCHOUÉ ✕</span>' : esc(t.verdict)) + '</p></div>';
+      html += '<div class="card"><p><b>' + esc(t.team1) + ' – ' + esc(t.team2) + '</b></p><p class="muted">Match terminé · score final ' + esc(t.score || "–") + '</p><p><b>' + esc(t.pick.label) + '</b> — ' + (t.verdict === "valide" ? '<span style="color:#00a651;font-weight:800">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#f44336;font-weight:800">ÉCHOUÉ ✕</span>' : esc(t.verdict)) + '</p></div>';
     } else if(!m){
       html += '<p class="muted">Ce match n\'est plus disponible.</p>';
     } else {
@@ -274,10 +274,10 @@ function render(){
         + '<div class="center"><div class="detail-score">' + (st === "upcoming" ? "VS" : esc(s ? s[0] : 0) + " - " + esc(s ? s[1] : 0)) + '</div><div class="mins">' + (st === "live" ? (m.minute + " minutes") : st === "done" ? "Terminé" : fmtTime(m.start) + " · " + minsTo(m.start)) + '</div></div>'
         + '<div class="team">' + logoHTML(m.logo2, m.team2) + '<span class="tname">' + esc(m.team2) + '</span></div></div></div>';
       html += '<div class="card"><h3 style="margin:0 0 10px">Cotes 1X2</h3><div class="odds" style="margin-top:0">'
-        + '<div class="pill"><span class="k">V1 · ' + esc(m.team1) + '</span><span class="v">' + fmtOdd(o["1"]) + (p ? ' <small style="color:#16a34a">' + Math.round(p.p1*100) + '%</small>' : '') + '</span></div>'
-        + '<div class="pill"><span class="k">X · Nul</span><span class="v">' + fmtOdd(o.X) + (p ? ' <small style="color:#16a34a">' + Math.round(p.pX*100) + '%</small>' : '') + '</span></div>'
-        + '<div class="pill"><span class="k">V2 · ' + esc(m.team2) + '</span><span class="v">' + fmtOdd(o["2"]) + (p ? ' <small style="color:#16a34a">' + Math.round(p.p2*100) + '%</small>' : '') + '</span></div></div>'
-        + (t ? '<div class="prono" style="margin-top:14px"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %</small></div><div class="cote">' + Number(t.pick.odd).toFixed(2) + '</div></div><p style="text-align:center;font-weight:800">' + (t.verdict === "valide" ? '<span style="color:#16a34a">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#dc2626">ÉCHOUÉ ✕</span>' : t.finished ? esc(t.verdict) : 'EN COURS') + '</p>' : '<p class="muted">Pronostic indisponible.</p>')
+        + '<div class="pill"><span class="k">V1 · ' + esc(m.team1) + '</span><span class="v">' + fmtOdd(o["1"]) + (p ? ' <small style="color:#00a651">' + Math.round(p.p1*100) + '%</small>' : '') + '</span></div>'
+        + '<div class="pill"><span class="k">X · Nul</span><span class="v">' + fmtOdd(o.X) + (p ? ' <small style="color:#00a651">' + Math.round(p.pX*100) + '%</small>' : '') + '</span></div>'
+        + '<div class="pill"><span class="k">V2 · ' + esc(m.team2) + '</span><span class="v">' + fmtOdd(o["2"]) + (p ? ' <small style="color:#00a651">' + Math.round(p.p2*100) + '%</small>' : '') + '</span></div></div>'
+        + (t ? '<div class="prono" style="margin-top:14px"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %</small></div><div class="cote">' + Number(t.pick.odd).toFixed(2) + '</div></div><p style="text-align:center;font-weight:800">' + (t.verdict === "valide" ? '<span style="color:#00a651">VALIDÉ ✓</span>' : t.verdict === "echoue" ? '<span style="color:#f44336">ÉCHOUÉ ✕</span>' : t.finished ? esc(t.verdict) : 'EN COURS') + '</p>' : '<p class="muted">Pronostic indisponible.</p>')
         + (m.marketCount ? '<div class="foot">+' + m.marketCount + ' paris disponibles</div>' : '') + '</div>';
     }
     app.innerHTML = html;
