@@ -81,7 +81,7 @@
 </div>
 <script>
 const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
-const PICKS_KEY = "jeux-virtuels-picks-v3";
+const PICKS_KEY = "jeux-virtuels-picks-v4";
 let allMatches = [];
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
@@ -96,20 +96,22 @@ function probs(m){
   const s = i1+iX+i2; if(!s) return null;
   return { p1:i1/s, pX:iX/s, p2:i2/s };
 }
-// RÈGLES MAISON v2 — objectif : VALIDER LE PLUS (taux de ✓ maximal).
-// Principe mathématique : une double chance couvre 2 issues sur 3, donc sa
-// probabilité (p1+pX ou p2+pX) est toujours supérieure à n'importe quel
-// résultat seul. Le nul seul (~27-30 %) valide donc MOINS que la double
-// chance : il est volontairement abandonné dans cette version.
-// R1 : une équipe à 55 % ou plus → sa victoire (cote utile, proba forte).
-// R2 : sinon → double chance du côté le plus fort (proba la plus haute possible).
+// RÈGLES MAISON v3 — recommandation ChatGPT, objectif : VALIDER LE PLUS.
+// Principe : une double chance couvre 2 issues sur 3, donc sa probabilité
+// est toujours supérieure à n'importe quel résultat seul. On ne choisit
+// donc JAMAIS la victoire seule, même au-dessus de 55 %.
+// - Probabilités normalisées (marge du bookmaker retirée).
+// - Toujours la double chance du côté favori (1X ou X2).
+// - Mêmes règles pré-match et live, cotes prises à la première capture ;
+//   aucune correction arbitraire à partir du score ou de la minute.
+// - Cotes incomplètes/invalides → pas de pronostic (honnêteté).
 function makePick(m){
+  const o = m.odds1x2 || {};
+  const vals = [o["1"], o.X, o["2"]].map(Number);
+  if(!vals.every(v => Number.isFinite(v) && v > 1)) return null;
   const p = probs(m); if(!p) return null;
   const odd = (prob) => Math.max(1.01, +(0.94/prob).toFixed(2));
-  const o = m.odds1x2 || {};
-  if(p.p1 >= 0.55) return { code:"1", label:"Victoire " + m.team1, market:"1X2", prob:p.p1, odd:o["1"] || odd(p.p1) };
-  if(p.p2 >= 0.55) return { code:"2", label:"Victoire " + m.team2, market:"1X2", prob:p.p2, odd:o["2"] || odd(p.p2) };
-  if(p.p1 + p.pX >= p.p2 + p.pX){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) }; }
+  if(p.p1 >= p.p2){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) }; }
   const pr = p.p2 + p.pX; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) };
 }
 function parseScore(score){
@@ -188,7 +190,7 @@ function matchCard(m, picks){
   }
   const o = m.odds1x2 || {};
   const prono = t ? '<div class="prono"><div class="label">' + esc(t.pick.label) + '<small>' + esc(t.pick.market) + ' · confiance ' + Math.round(t.pick.prob*100) + ' %</small></div><div class="cote">' + Number(t.pick.odd).toFixed(2) + '</div></div>'
-    : '<div class="prono"><div class="label">Pronostic indisponible<small>Match déjà terminé à l\'ouverture</small></div><div class="cote">—</div></div>';
+    : '<div class="prono"><div class="label">Pronostic indisponible<small>Cotes indisponibles ou incomplètes</small></div><div class="cote">—</div></div>';
   return '<article class="card click" onclick="openMatch(' + m.id + ')">'
     + '<div class="teams">'
     + '<div class="team">' + logoHTML(m.logo1, m.team1) + '<span class="tname">' + esc(m.team1) + '</span></div>'
@@ -223,7 +225,8 @@ function render(){
     let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span></div>'
       + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
       + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
-      + '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Nos règles : favori ≥ 55 % → victoire · sinon double chance du côté le plus fort.</p>'
+      + '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Toujours la double chance du côté favori — la règle qui valide le plus.</p>'
+      + (function(){ let v = 0, e = 0, att = 0; for(const t of Object.values(picks)){ if(t.finished){ if(t.verdict === "valide") v++; else if(t.verdict === "echoue") e++; } else att++; } const tot = v + e; const taux = tot ? Math.round(v / tot * 100) + " %" : "—"; return '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Bilan sur ton téléphone : ' + v + ' validés ✓ · ' + e + ' échoués ✗ · ' + taux + ' · ' + att + ' en attente.</p>'; })()
     {
       html += '<div class="grid2">';
       for(const [name, e] of list){
