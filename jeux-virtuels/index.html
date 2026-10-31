@@ -17,6 +17,12 @@
   .hist-row .h-sub{color:#64748b;font-size:13px;margin-top:4px}
   .hist-row .ok{color:#00a651;font-weight:800}
   .hist-row .ko{color:#f44336;font-weight:800}
+  .stat-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+  .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px 8px;text-align:center}
+  .stat-card b{font-size:26px;display:block}
+  .stat-card span{font-size:13px;color:#64748b;font-weight:700}
+  .stat-card.ok b{color:#00a651}
+  .stat-card.ko b{color:#f44336}
   .wrap{max-width:720px;margin:0 auto;padding:16px}
   h1{font-size:40px;line-height:1;margin:8px 0 6px;letter-spacing:-.5px}
   .sub{color:#64748b;font-size:15px;margin:0 0 18px}
@@ -334,10 +340,10 @@ function render(){
     }
     app.innerHTML = html;
   } else if(view.type === "bilan"){
-    let v = 0, tot = 0, att = 0, dir = 0;
+    let v = 0, e = 0, tot = 0, att = 0, dir = 0;
     for(const t of Object.values(picks)){
       if(t.finished){
-        tot++; if(t.verdict === "valide") v++;
+        tot++; if(t.verdict === "valide") v++; else if(t.verdict === "echoue") e++;
         if(t.pick.live || t.pick.quasi) dir++;
       } else att++;
     }
@@ -354,9 +360,8 @@ function render(){
     }
     if(!shown.length) hist = '<p class="muted">Aucun pronostic dans ce filtre pour le moment.</p>';
     html = backBar() + '<div style="background:#ff7a00;border-radius:20px;padding:20px 16px;color:#fff;text-align:center;margin-bottom:16px"><div style="font-size:20px;font-weight:900">BILAN</div><div class="bilan-big">' + v + ' / ' + tot + '</div><div style="font-size:16px">pronostics validés sur jugés · ' + taux + '</div></div>'
-      + '<div class="bilan-row"><span>En attente</span><b>' + att + '</b></div>'
-      + '<div class="bilan-row"><span>Dont pris en direct</span><b>' + dir + '</b></div>'
-      + '<p class="muted" style="text-align:center;font-size:13px">Compteur de ton téléphone. Tous les pronostics jugés comptent dans le taux, comme sur Bolt ; les directs sont marqués « pris en direct » dans l\'historique.</p>'
+      + '<div class="stat-cards"><div class="stat-card ok"><b>' + v + '</b><span>Validés</span></div><div class="stat-card ko"><b>' + e + '</b><span>Échoués</span></div><div class="stat-card"><b>' + att + '</b><span>En attente</span></div></div>'
+      + '<p class="muted" style="text-align:center;font-size:13px">Dont ' + dir + ' pris en direct · Tous les pronostics jugés comptent dans le taux, comme sur Bolt. Les chiffres se mettent à jour tout seuls toutes les 5 secondes, au fur et à mesure que les matchs se terminent.</p>'
       + '<h3 style="margin:16px 0 10px">Historique</h3>'
       + '<div class="tabs"><button class="' + (bilanFilter === "tous" ? "active" : "") + '" onclick="setBilanFilter(\'tous\')">Tous</button><button class="' + (bilanFilter === "valides" ? "active" : "") + '" onclick="setBilanFilter(\'valides\')">Validés</button><button class="' + (bilanFilter === "echoues" ? "active" : "") + '" onclick="setBilanFilter(\'echoues\')">Échoués</button></div>'
       + hist;
