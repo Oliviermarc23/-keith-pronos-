@@ -81,7 +81,7 @@
 </div>
 <script>
 const API = "https://live-score-odds-bridge.lovable.app/api/public/matches";
-const PICKS_KEY = "jeux-virtuels-picks-v4";
+const PICKS_KEY = "jeux-virtuels-picks-v5";
 let allMatches = [];
 let lastRefresh = Date.now();
 let view = { type: "home" }; // home | league | match | live
@@ -96,23 +96,31 @@ function probs(m){
   const s = i1+iX+i2; if(!s) return null;
   return { p1:i1/s, pX:iX/s, p2:i2/s };
 }
-// RÈGLES MAISON v3 — recommandation ChatGPT, objectif : VALIDER LE PLUS.
-// Principe : une double chance couvre 2 issues sur 3, donc sa probabilité
-// est toujours supérieure à n'importe quel résultat seul. On ne choisit
-// donc JAMAIS la victoire seule, même au-dessus de 55 %.
-// - Probabilités normalisées (marge du bookmaker retirée).
-// - Toujours la double chance du côté favori (1X ou X2).
-// - Mêmes règles pré-match et live, cotes prises à la première capture ;
-//   aucune correction arbitraire à partir du score ou de la minute.
-// - Cotes incomplètes/invalides → pas de pronostic (honnêteté).
+// RÈGLES MAISON v4 — recommandation Claude, objectif : VALIDER LE PLUS.
+// Amélioration par rapport à v3 : la meilleure double chance n'est pas
+// forcément celle du côté favori, c'est celle qui EXCLUT L'ISSUE LA MOINS
+// PROBABLE : proba = 1 - min(p1, pX, p2). D'où le nouveau code "12"
+// (équipe 1 ou équipe 2, sans le nul) quand le nul est le moins probable.
+// - Probabilités normalisées (marge retirée) pour l'affichage.
+// - Cote estimée calculée à partir des cotes BRUTES : 1 / (1/cote_a + 1/cote_b),
+//   sans marge inventée (contrairement au 0,94/proba de v3).
+// - JAMAIS de victoire seule : pour valider le plus, le seuil victoire de
+//   Claude (70 %) est mis à 101 %, donc toujours une double chance.
+// - Cotes incomplètes/invalides → pas de pronostic.
+// Écart assumé par rapport à Claude : garde-fou gardé à cote > 1 (et non
+// > 1,001), car les cotes live à 1,001 sont fréquentes dans ce flux et les
+// exclure laisserait beaucoup de matchs sans pronostic.
 function makePick(m){
   const o = m.odds1x2 || {};
   const vals = [o["1"], o.X, o["2"]].map(Number);
   if(!vals.every(v => Number.isFinite(v) && v > 1)) return null;
   const p = probs(m); if(!p) return null;
-  const odd = (prob) => Math.max(1.01, +(0.94/prob).toFixed(2));
-  if(p.p1 >= p.p2){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) }; }
-  const pr = p.p2 + p.pX; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:odd(pr) };
+  const r = vals.map(v => 1 / v);
+  const cote2 = (a, b) => Math.max(1.01, +(1 / (r[a] + r[b])).toFixed(2));
+  const mn = Math.min(p.p1, p.pX, p.p2);
+  if(mn === p.p2){ const pr = p.p1 + p.pX; return { code:"1X", label:m.team1 + " ou nul", market:"Double chance", prob:pr, odd:cote2(0, 1) }; }
+  if(mn === p.p1){ const pr = p.pX + p.p2; return { code:"X2", label:m.team2 + " ou nul", market:"Double chance", prob:pr, odd:cote2(1, 2) }; }
+  const pr = p.p1 + p.p2; return { code:"12", label:m.team1 + " ou " + m.team2, market:"Double chance", prob:pr, odd:cote2(0, 2) };
 }
 function parseScore(score){
   const r = (score||"").match(/(\d+)\s*[-:]\s*(\d+)/);
@@ -120,7 +128,7 @@ function parseScore(score){
 }
 function pickWins(code, a, b){
   const res = a > b ? "1" : a < b ? "2" : "X";
-  return code === res || (code === "1X" && res !== "2") || (code === "X2" && res !== "1");
+  return code === res || (code === "1X" && res !== "2") || (code === "X2" && res !== "1") || (code === "12" && res !== "X");
 }
 // Pronostic figé à la première apparition du match, verdict quand il quitte le flux (ou à 90' non live).
 function updatePicks(matches){
@@ -136,6 +144,9 @@ function updatePicks(matches){
       picks[k] = t;
     }
     const isLive = !!m.isLive;
+    // Règle Claude : avant le coup d'envoi, le pronostic se recalcule à
+    // chaque rafraîchissement ; il est figé dès que le match passe en direct.
+    if(!t.seenLive && !t.finished){ const np = makePick(m); if(np) t.pick = np; }
     if(isLive){ t.seenLive = true; t.score = m.score; }
     if(!t.finished && t.seenLive && !isLive && m.minute != null && m.minute >= 90 && parseScore(m.score)){
       t.finished = true; t.score = m.score;
@@ -225,7 +236,7 @@ function render(){
     let html = '<div class="topbar"><span class="brand-logo">⚡</span><span class="brand">GENIUS PRÉDICTOR</span></div>'
       + '<div class="hero"><div class="kicker">JEUX VIRTUELS</div><div class="big">PRÉDIS.<br>GAGNE.</div>'
       + '<div class="stats"><div class="stat"><b>' + allMatches.length + '</b><span>MATCHS</span></div><div class="stat"><b>' + liveCount + '</b><span>EN DIRECT</span></div><div class="stat"><b>' + list.length + '</b><span>LIGUES</span></div></div></div>'
-      + '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Toujours la double chance du côté favori — la règle qui valide le plus.</p>'
+      + '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Toujours la double chance qui exclut l’issue la moins probable — la règle qui valide le plus.</p>'
       + (function(){ let v = 0, e = 0, att = 0; for(const t of Object.values(picks)){ if(t.finished){ if(t.verdict === "valide") v++; else if(t.verdict === "echoue") e++; } else att++; } const tot = v + e; const taux = tot ? Math.round(v / tot * 100) + " %" : "—"; return '<p class="muted" style="font-size:13px;margin:-6px 0 14px">Bilan sur ton téléphone : ' + v + ' validés ✓ · ' + e + ' échoués ✗ · ' + taux + ' · ' + att + ' en attente.</p>'; })()
     {
       html += '<div class="grid2">';
